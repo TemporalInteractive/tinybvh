@@ -1,10 +1,8 @@
-use glam::Vec3;
+use glam::{Vec3, Vec4};
 
 mod ffi;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Intersection(ffi::tinybvh_Intersection);
+pub type Intersection = ffi::tinybvh_Intersection;
 
 impl Default for Intersection {
     fn default() -> Self {
@@ -13,38 +11,26 @@ impl Default for Intersection {
 }
 
 impl Intersection {
-    pub fn new(instance: u32, t: f32, u: f32, v: f32, primitive: u32) -> Self {
-        Self(ffi::tinybvh_Intersection {
-            inst: instance,
+    pub fn new(inst: u32, t: f32, u: f32, v: f32, prim: u32) -> Self {
+        Self {
+            inst,
             t,
             u,
             v,
-            prim: primitive,
-        })
+            prim,
+        }
     }
 }
 
-#[repr(C)]
-#[repr(align(16))]
-#[derive(Copy, Clone)]
-pub struct Ray(ffi::tinybvh_Ray);
+pub type Ray = ffi::tinybvh_Ray;
 
 impl Ray {
     pub fn new(origin: Vec3, direction: Vec3) -> Self {
-        Self(unsafe { ffi::tinybvh_Ray_new(origin.into(), direction.into()) })
-    }
-
-    pub fn origin(&self) -> Vec3 {
-        self.0.O.into()
-    }
-
-    pub fn direction(&self) -> Vec3 {
-        self.0.D.into()
+        unsafe { ffi::tinybvh_Ray_new(origin.into(), direction.into()) }
     }
 }
 
-#[repr(C)]
-pub struct Bvh(ffi::tinybvh_BVH);
+pub type Bvh = ffi::tinybvh_BVH;
 
 impl Default for Bvh {
     fn default() -> Self {
@@ -54,12 +40,19 @@ impl Default for Bvh {
 
 impl Bvh {
     pub fn new() -> Self {
-        Self(unsafe { ffi::tinybvh_BVH_new() })
+        unsafe { ffi::tinybvh_BVH_new() }
     }
 
-    pub fn intersect(&self, ray: &mut Ray) {
+    pub fn build(&mut self, vertices: &[Vec4]) {
         unsafe {
-            ffi::tinybvh_BVH_Intersect(&self.0, &mut ray.0);
+            let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(vertices);
+            ffi::tinybvh_BVH_Build(self, &vertices[0], vertices.len() as u32);
         }
+    }
+
+    /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
+    /// Returns the cost of the intersection.
+    pub fn intersect(&self, ray: &mut Ray) -> i32 {
+        unsafe { ffi::tinybvh_BVH_Intersect(self, ray) }
     }
 }

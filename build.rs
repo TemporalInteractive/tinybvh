@@ -2,8 +2,14 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    // Compile and link to the c++ binaries
+    cc::Build::new().file("ffi/wrapper.cpp").compile("tinybvh");
+    println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());
+    println!("cargo:rustc-link-lib=tinybvh");
+
+    // Generate rust bindings
     let bindings = bindgen::Builder::default()
-        .header("ffi/include/tiny_bvh.hpp")
+        .header("ffi/wrapper.hpp")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");

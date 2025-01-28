@@ -1,6 +1,7 @@
 use glam::{Vec3, Vec4};
 
 mod ffi;
+pub mod vec_helpers;
 
 pub type Intersection = ffi::tinybvh_Intersection;
 

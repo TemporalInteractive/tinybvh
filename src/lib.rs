@@ -64,7 +64,7 @@ impl Bvh {
     pub fn build(&mut self, vertices: &[Vec4]) {
         unsafe {
             let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(vertices);
-            ffi::tinybvh_BVH_Build(self.0.as_mut(), &vertices[0], vertices.len() as u32);
+            ffi::tinybvh_BVH_Build(self.0.as_mut(), &vertices[0], vertices.len() as u32 / 3);
         }
     }
 
@@ -111,5 +111,13 @@ impl Bvh {
     /// Intersects a ray against the bvh, returning if any hit took place.
     pub fn is_occluded(&self, ray: &Ray) -> bool {
         unsafe { ffi::tinybvh_BVH_IsOccluded(self.0.as_ref(), ray) }
+    }
+}
+
+impl Drop for Bvh {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::tinybvh_BVH_BVH_destructor(self.0.as_mut());
+        }
     }
 }

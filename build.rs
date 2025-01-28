@@ -3,7 +3,10 @@ use std::path::PathBuf;
 
 fn main() {
     // Compile and link to the c++ binaries
-    cc::Build::new().file("ffi/wrapper.cpp").compile("tinybvh");
+    cc::Build::new()
+        .file("ffi/wrapper.cpp")
+        .flag("-Ofast")
+        .compile("tinybvh");
     println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());
     println!("cargo:rustc-link-lib=tinybvh");
 

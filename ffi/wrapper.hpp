@@ -1,4 +1,3 @@
-#define TINYBVH_NO_SIMD // TODO: get it working with SIMD
 #include "tinybvh/tiny_bvh.h"
 
 #include <array>

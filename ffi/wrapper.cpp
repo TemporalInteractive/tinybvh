@@ -8,8 +8,8 @@ namespace tinybvh {
         return Ray(origin, direction);
     }
 
-    BVH BVH_new()
+    BVH* BVH_new()
     {
-        return BVH{};
+        return new BVH{};
     }
 }

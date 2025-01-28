@@ -38,7 +38,7 @@ pub trait BvhBase {
     fn base_mut(&mut self) -> &mut ffi::tinybvh_BVHBase;
 }
 
-pub type Bvh = ffi::tinybvh_BVH;
+pub struct Bvh(Box<ffi::tinybvh_BVH>);
 
 impl Default for Bvh {
     fn default() -> Self {
@@ -48,30 +48,35 @@ impl Default for Bvh {
 
 impl BvhBase for Bvh {
     fn base(&self) -> &ffi::tinybvh_BVHBase {
-        &self._base
+        &self.0._base
     }
 
     fn base_mut(&mut self) -> &mut ffi::tinybvh_BVHBase {
-        &mut self._base
+        &mut self.0._base
     }
 }
 
 impl Bvh {
     pub fn new() -> Self {
-        unsafe { ffi::tinybvh_BVH_new() }
+        Self(unsafe { Box::from_raw(ffi::tinybvh_BVH_new()) })
     }
 
     pub fn build(&mut self, vertices: &[Vec4]) {
         unsafe {
             let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(vertices);
-            ffi::tinybvh_BVH_Build(self, &vertices[0], vertices.len() as u32);
+            ffi::tinybvh_BVH_Build(self.0.as_mut(), &vertices[0], vertices.len() as u32);
         }
     }
 
     pub fn build_with_indices(&mut self, vertices: &[Vec4], indices: &[u32]) {
         unsafe {
             let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(vertices);
-            ffi::tinybvh_BVH_Build2(self, &vertices[0], &indices[0], indices.len() as u32);
+            ffi::tinybvh_BVH_Build2(
+                self.0.as_mut(),
+                &vertices[0],
+                &indices[0],
+                indices.len() as u32,
+            );
         }
     }
 
@@ -88,7 +93,7 @@ impl Bvh {
 
         unsafe {
             ffi::tinybvh_BVH_Build4(
-                self,
+                self.0.as_mut(),
                 &mut blas_instances[0],
                 blas_instances.len() as u32,
                 blas_bases.as_mut_ptr(),
@@ -100,17 +105,11 @@ impl Bvh {
     /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
     /// Returns the cost of the intersection.
     pub fn intersect(&self, ray: &mut Ray) -> i32 {
-        unsafe { ffi::tinybvh_BVH_Intersect(self, ray) }
+        unsafe { ffi::tinybvh_BVH_Intersect(self.0.as_ref(), ray) }
     }
 
     /// Intersects a ray against the bvh, returning if any hit took place.
     pub fn is_occluded(&self, ray: &Ray) -> bool {
-        unsafe { ffi::tinybvh_BVH_IsOccluded(self, ray) }
-    }
-}
-
-impl Drop for Bvh {
-    fn drop(&mut self) {
-        unsafe { ffi::tinybvh_BVH_BVH_destructor(self) };
+        unsafe { ffi::tinybvh_BVH_IsOccluded(self.0.as_ref(), ray) }
     }
 }

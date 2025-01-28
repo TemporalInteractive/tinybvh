@@ -75,7 +75,7 @@ impl Bvh {
                 self.0.as_mut(),
                 &vertices[0],
                 &indices[0],
-                indices.len() as u32,
+                indices.len() as u32 / 3,
             );
         }
     }

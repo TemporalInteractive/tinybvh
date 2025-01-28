@@ -108,3 +108,9 @@ impl Bvh {
         unsafe { ffi::tinybvh_BVH_IsOccluded(self, ray) }
     }
 }
+
+impl Drop for Bvh {
+    fn drop(&mut self) {
+        unsafe { ffi::tinybvh_BVH_BVH_destructor(self) };
+    }
+}

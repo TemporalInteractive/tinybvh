@@ -20,7 +20,7 @@ mod tests {
         let triangles_vertices = test_triangles_vertices();
 
         let mut bvh = Bvh::new();
-        bvh.build(&triangles_vertices);
+        bvh.build(triangles_vertices);
 
         let mut ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0));
         assert_eq!(bvh.intersect(&mut ray), 1);

@@ -1,5 +1,5 @@
 use glam::{Mat4, Vec3, Vec4};
-use std::rc::Rc;
+use std::sync::Arc;
 
 mod ffi;
 pub mod vec_helpers;
@@ -63,7 +63,7 @@ pub struct Bvh {
     vertices: Vec<Vec4>,
     indices: Vec<u32>,
     blas_instances: Vec<BlasInstance>,
-    blasses: Vec<Rc<dyn BvhBase>>,
+    blasses: Vec<Arc<dyn BvhBase>>,
     blas_bases: Vec<*mut ffi::tinybvh_BVHBase>,
 }
 
@@ -107,7 +107,7 @@ impl Bvh {
     pub fn build_with_blas_instances(
         &mut self,
         blas_instances: Vec<BlasInstance>,
-        blasses: Vec<Rc<dyn BvhBase>>,
+        blasses: Vec<Arc<dyn BvhBase>>,
     ) {
         self.blas_instances = blas_instances;
         self.blasses = blasses;
@@ -167,3 +167,8 @@ impl Drop for Bvh {
         }
     }
 }
+
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Send for Bvh {}
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Sync for Bvh {}

@@ -58,6 +58,11 @@ pub trait BvhBase {
     fn base_mut(&mut self) -> &mut ffi::tinybvh_BVHBase;
 }
 
+pub enum BvhBuildQuality {
+    Low,
+    High,
+}
+
 pub struct Bvh {
     bvh: Box<ffi::tinybvh_BVH>,
     vertices: Vec<Vec4>,
@@ -80,27 +85,61 @@ impl Bvh {
         }
     }
 
-    pub fn build(&mut self, vertices: Vec<Vec4>) {
+    pub fn build(&mut self, vertices: Vec<Vec4>, quality: BvhBuildQuality) {
         self.vertices = vertices;
 
         unsafe {
             let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
-            ffi::tinybvh_BVH_Build(self.bvh.as_mut(), &vertices[0], vertices.len() as u32 / 3);
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH_Build(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH_BuildHQ(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+            }
         }
     }
 
-    pub fn build_with_indices(&mut self, vertices: Vec<Vec4>, indices: Vec<u32>) {
+    pub fn build_with_indices(
+        &mut self,
+        vertices: Vec<Vec4>,
+        indices: Vec<u32>,
+        quality: BvhBuildQuality,
+    ) {
         self.vertices = vertices;
         self.indices = indices;
 
         unsafe {
             let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
-            ffi::tinybvh_BVH_Build2(
-                self.bvh.as_mut(),
-                &vertices[0],
-                &self.indices[0],
-                self.indices.len() as u32 / 3,
-            );
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH_Build2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH_BuildHQ2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+            }
         }
     }
 
@@ -138,6 +177,14 @@ impl Bvh {
         unsafe { ffi::tinybvh_BVH_Intersect(self.bvh.as_ref(), ray) }
     }
 
+    /// Intersects a packet of 256 rays against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
+    /// This is faster than using individual calls to intersect for a packet of coherent rays. For now only supported for BLASes.
+    pub fn intersect_256(&self, rays: &mut [Ray]) {
+        unsafe {
+            ffi::tinybvh_BVH_Intersect256Rays(self.bvh.as_ref(), rays.as_mut_ptr());
+        }
+    }
+
     /// Intersects a ray against the bvh, returning if any hit took place.
     pub fn is_occluded(&self, ray: &Ray) -> bool {
         unsafe { ffi::tinybvh_BVH_IsOccluded(self.bvh.as_ref(), ray) }
@@ -172,3 +219,118 @@ impl Drop for Bvh {
 unsafe impl Send for Bvh {}
 #[cfg(feature = "unsafe-send-sync")]
 unsafe impl Sync for Bvh {}
+
+pub struct BvhSoA {
+    bvh: Box<ffi::tinybvh_BVH_SoA>,
+    vertices: Vec<Vec4>,
+    indices: Vec<u32>,
+}
+
+impl BvhSoA {
+    pub fn new() -> Self {
+        let bvh = unsafe { Box::from_raw(ffi::tinybvh_BVH_SoA_new()) };
+        Self {
+            bvh,
+            vertices: vec![],
+            indices: vec![],
+        }
+    }
+
+    pub fn build(&mut self, vertices: Vec<Vec4>, quality: BvhBuildQuality) {
+        self.vertices = vertices;
+
+        unsafe {
+            let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH_SoA_Build(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH_SoA_BuildHQ(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn build_with_indices(
+        &mut self,
+        vertices: Vec<Vec4>,
+        indices: Vec<u32>,
+        quality: BvhBuildQuality,
+    ) {
+        self.vertices = vertices;
+        self.indices = indices;
+
+        unsafe {
+            let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH_SoA_Build2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH_SoA_BuildHQ2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+            }
+        }
+    }
+
+    /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
+    /// Returns the cost of the intersection.
+    pub fn intersect(&self, ray: &mut Ray) -> i32 {
+        unsafe { ffi::tinybvh_BVH_SoA_Intersect(self.bvh.as_ref(), ray) }
+    }
+
+    /// Intersects a ray against the bvh, returning if any hit took place.
+    pub fn is_occluded(&self, ray: &Ray) -> bool {
+        unsafe { ffi::tinybvh_BVH_SoA_IsOccluded(self.bvh.as_ref(), ray) }
+    }
+}
+
+impl Default for BvhSoA {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BvhBase for BvhSoA {
+    fn base(&self) -> &ffi::tinybvh_BVHBase {
+        &self.bvh._base
+    }
+
+    fn base_mut(&mut self) -> &mut ffi::tinybvh_BVHBase {
+        &mut self.bvh._base
+    }
+}
+
+impl Drop for BvhSoA {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::tinybvh_BVH_SoA_BVH_SoA_destructor(self.bvh.as_mut());
+        }
+    }
+}
+
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Send for BvhSoA {}
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Sync for BvhSoA {}

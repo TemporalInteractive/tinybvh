@@ -8,4 +8,5 @@ namespace tinybvh {
     Ray Ray_new(bvhvec3 origin, bvhvec3 direction);
 
     BVH* BVH_new();
+    BVH_SoA* BVH_SoA_new();
 }

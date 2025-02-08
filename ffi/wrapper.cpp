@@ -11,4 +11,9 @@ namespace tinybvh {
     {
         return new BVH{};
     }
+
+    BVH_SoA* BVH_SoA_new()
+    {
+        return new BVH_SoA{};
+    }
 }

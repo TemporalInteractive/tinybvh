@@ -13,6 +13,7 @@ impl Default for Intersection {
 }
 
 impl Intersection {
+    #[inline]
     pub fn new(inst: u32, t: f32, u: f32, v: f32, prim: u32) -> Self {
         Self {
             inst,
@@ -27,6 +28,7 @@ impl Intersection {
 pub type Ray = ffi::tinybvh_Ray;
 
 impl Ray {
+    #[inline]
     pub fn new(origin: Vec3, direction: Vec3) -> Self {
         unsafe { ffi::tinybvh_Ray_new(origin.into(), direction.into()) }
     }
@@ -35,6 +37,7 @@ impl Ray {
 pub type BlasInstance = ffi::tinybvh_BLASInstance;
 
 impl BlasInstance {
+    #[inline]
     pub fn new(transform: Mat4, blas_idx: u32) -> Self {
         let mut blas_instance = ffi::tinybvh_BLASInstance {
             transform: transform.transpose().to_cols_array(),
@@ -73,6 +76,7 @@ pub struct Bvh {
 }
 
 impl Bvh {
+    #[inline]
     pub fn new() -> Self {
         let bvh = unsafe { Box::from_raw(ffi::tinybvh_BVH_new()) };
         Self {
@@ -85,6 +89,7 @@ impl Bvh {
         }
     }
 
+    #[inline]
     pub fn build(&mut self, vertices: Vec<Vec4>, quality: BvhBuildQuality) {
         self.vertices = vertices;
 
@@ -110,6 +115,7 @@ impl Bvh {
         }
     }
 
+    #[inline]
     pub fn build_with_indices(
         &mut self,
         vertices: Vec<Vec4>,
@@ -143,6 +149,7 @@ impl Bvh {
         }
     }
 
+    #[inline]
     pub fn build_with_blas_instances(
         &mut self,
         blas_instances: Vec<BlasInstance>,
@@ -173,12 +180,14 @@ impl Bvh {
 
     /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
     /// Returns the cost of the intersection.
+    #[inline]
     pub fn intersect(&self, ray: &mut Ray) -> i32 {
         unsafe { ffi::tinybvh_BVH_Intersect(self.bvh.as_ref(), ray) }
     }
 
     /// Intersects a packet of 256 rays against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
     /// This is faster than using individual calls to intersect for a packet of coherent rays. For now only supported for BLASes.
+    #[inline]
     pub fn intersect_256(&self, rays: &mut [Ray]) {
         unsafe {
             ffi::tinybvh_BVH_Intersect256Rays(self.bvh.as_ref(), rays.as_mut_ptr());
@@ -186,6 +195,7 @@ impl Bvh {
     }
 
     /// Intersects a ray against the bvh, returning if any hit took place.
+    #[inline]
     pub fn is_occluded(&self, ray: &Ray) -> bool {
         unsafe { ffi::tinybvh_BVH_IsOccluded(self.bvh.as_ref(), ray) }
     }
@@ -227,6 +237,7 @@ pub struct BvhSoA {
 }
 
 impl BvhSoA {
+    #[inline]
     pub fn new() -> Self {
         let bvh = unsafe { Box::from_raw(ffi::tinybvh_BVH_SoA_new()) };
         Self {
@@ -236,6 +247,7 @@ impl BvhSoA {
         }
     }
 
+    #[inline]
     pub fn build(&mut self, vertices: Vec<Vec4>, quality: BvhBuildQuality) {
         self.vertices = vertices;
 
@@ -261,6 +273,7 @@ impl BvhSoA {
         }
     }
 
+    #[inline]
     pub fn build_with_indices(
         &mut self,
         vertices: Vec<Vec4>,
@@ -296,11 +309,13 @@ impl BvhSoA {
 
     /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
     /// Returns the cost of the intersection.
+    #[inline]
     pub fn intersect(&self, ray: &mut Ray) -> i32 {
         unsafe { ffi::tinybvh_BVH_SoA_Intersect(self.bvh.as_ref(), ray) }
     }
 
     /// Intersects a ray against the bvh, returning if any hit took place.
+    #[inline]
     pub fn is_occluded(&self, ray: &Ray) -> bool {
         unsafe { ffi::tinybvh_BVH_SoA_IsOccluded(self.bvh.as_ref(), ray) }
     }

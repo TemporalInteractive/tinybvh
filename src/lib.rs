@@ -349,3 +349,123 @@ impl Drop for BvhSoA {
 unsafe impl Send for BvhSoA {}
 #[cfg(feature = "unsafe-send-sync")]
 unsafe impl Sync for BvhSoA {}
+
+pub struct Bvh4Cpu {
+    bvh: Box<ffi::tinybvh_BVH4_CPU>,
+    vertices: Vec<Vec4>,
+    indices: Vec<u32>,
+}
+
+impl Bvh4Cpu {
+    #[inline]
+    pub fn new() -> Self {
+        let bvh = unsafe { Box::from_raw(ffi::tinybvh_BVH4_CPU_new()) };
+        Self {
+            bvh,
+            vertices: vec![],
+            indices: vec![],
+        }
+    }
+
+    #[inline]
+    pub fn build(&mut self, vertices: Vec<Vec4>, quality: BvhBuildQuality) {
+        self.vertices = vertices;
+
+        unsafe {
+            let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH4_CPU_Build(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH4_CPU_BuildHQ(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        vertices.len() as u32 / 3,
+                    );
+                }
+            }
+        }
+    }
+
+    #[inline]
+    pub fn build_with_indices(
+        &mut self,
+        vertices: Vec<Vec4>,
+        indices: Vec<u32>,
+        quality: BvhBuildQuality,
+    ) {
+        self.vertices = vertices;
+        self.indices = indices;
+
+        unsafe {
+            let vertices: &[ffi::tinybvh_bvhvec4] = std::mem::transmute(self.vertices.as_slice());
+
+            match quality {
+                BvhBuildQuality::Low => {
+                    ffi::tinybvh_BVH4_CPU_Build2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+                BvhBuildQuality::High => {
+                    ffi::tinybvh_BVH4_CPU_BuildHQ2(
+                        self.bvh.as_mut(),
+                        &vertices[0],
+                        &self.indices[0],
+                        self.indices.len() as u32 / 3,
+                    );
+                }
+            }
+        }
+    }
+
+    /// Intersects a ray against the bvh, the resulting distance is stored in `Ray.t` which is `INFINITE` when no intersection happened.
+    /// Returns the cost of the intersection.
+    #[inline]
+    pub fn intersect(&self, ray: &mut Ray) -> i32 {
+        unsafe { ffi::tinybvh_BVH4_CPU_Intersect(self.bvh.as_ref(), ray) }
+    }
+
+    /// Intersects a ray against the bvh, returning if any hit took place.
+    #[inline]
+    pub fn is_occluded(&self, ray: &Ray) -> bool {
+        unsafe { ffi::tinybvh_BVH4_CPU_IsOccluded(self.bvh.as_ref(), ray) }
+    }
+}
+
+impl Default for Bvh4Cpu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BvhBase for Bvh4Cpu {
+    fn base(&self) -> &ffi::tinybvh_BVHBase {
+        &self.bvh._base
+    }
+
+    fn base_mut(&mut self) -> &mut ffi::tinybvh_BVHBase {
+        &mut self.bvh._base
+    }
+}
+
+impl Drop for Bvh4Cpu {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::tinybvh_BVH4_CPU_BVH4_CPU_destructor(self.bvh.as_mut());
+        }
+    }
+}
+
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Send for Bvh4Cpu {}
+#[cfg(feature = "unsafe-send-sync")]
+unsafe impl Sync for Bvh4Cpu {}

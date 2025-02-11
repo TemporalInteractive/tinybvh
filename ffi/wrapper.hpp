@@ -9,4 +9,5 @@ namespace tinybvh {
 
     BVH* BVH_new();
     BVH_SoA* BVH_SoA_new();
+    BVH4_CPU* BVH4_CPU_new();
 }

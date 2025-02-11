@@ -16,4 +16,9 @@ namespace tinybvh {
     {
         return new BVH_SoA{};
     }
+
+    BVH4_CPU* BVH4_CPU_new()
+    {
+        return new BVH4_CPU{};
+    }
 }

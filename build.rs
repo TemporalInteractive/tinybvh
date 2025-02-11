@@ -11,6 +11,7 @@ fn main() {
         .flag("-mavx")
         .flag("-O3")
         .flag("-ffast-math")
+        .flag("-Wno-missing-field-initializers")
         .compile("tinybvh");
     #[cfg(not(feature = "simd"))]
     cc::Build::new()
@@ -18,6 +19,7 @@ fn main() {
         .flag("-D TINYBVH_NO_SIMD")
         .flag("-O3")
         .flag("-ffast-math")
+        .flag("-Wno-missing-field-initializers")
         .compile("tinybvh");
 
     println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());

@@ -6,25 +6,6 @@ pub mod vec_helpers;
 
 pub type Intersection = ffi::tinybvh_Intersection;
 
-impl Default for Intersection {
-    fn default() -> Self {
-        Self::new(0, 0.0, 0.0, 0.0, 0)
-    }
-}
-
-impl Intersection {
-    #[inline]
-    pub fn new(inst: u32, t: f32, u: f32, v: f32, prim: u32) -> Self {
-        Self {
-            inst,
-            t,
-            u,
-            v,
-            prim,
-        }
-    }
-}
-
 pub type Ray = ffi::tinybvh_Ray;
 
 impl Ray {

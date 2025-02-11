@@ -4,23 +4,20 @@ use std::path::PathBuf;
 fn main() {
     std::env::set_var("CC", "C:\\Program Files\\LLVM\\bin\\clang.exe");
 
-    // Compile and link to the c++ binaries
+    let mut build = cc::Build::new();
+    let build = build
+        .file("ffi/wrapper.cpp")
+        .flag("-Wno-missing-field-initializers");
+
     #[cfg(feature = "simd")]
-    cc::Build::new()
-        .file("ffi/wrapper.cpp")
-        .flag("-mavx")
-        .flag("-O3")
-        .flag("-ffast-math")
-        .flag("-Wno-missing-field-initializers")
-        .compile("tinybvh");
+    let build = build.flag("-mavx");
     #[cfg(not(feature = "simd"))]
-    cc::Build::new()
-        .file("ffi/wrapper.cpp")
-        .flag("-D TINYBVH_NO_SIMD")
-        .flag("-O3")
-        .flag("-ffast-math")
-        .flag("-Wno-missing-field-initializers")
-        .compile("tinybvh");
+    let build = build.flag("-D TINYBVH_NO_SIMD");
+
+    #[cfg(not(debug_assertions))]
+    let build = build.flag("-O3").flag("-ffast-math");
+
+    build.compile("tinybvh");
 
     println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());
     println!("cargo:rustc-link-lib=tinybvh");

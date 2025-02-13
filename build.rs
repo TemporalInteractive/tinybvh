@@ -23,12 +23,9 @@ fn main() {
     println!("cargo:rustc-link-lib=tinybvh");
 
     #[cfg(feature = "simd")]
-    std::env::set_var("BINDGEN_EXTRA_CLANG_ARGS", "-mavx -O3 -ffast-math");
+    std::env::set_var("BINDGEN_EXTRA_CLANG_ARGS", "-mavx");
     #[cfg(not(feature = "simd"))]
-    std::env::set_var(
-        "BINDGEN_EXTRA_CLANG_ARGS",
-        "-D TINYBVH_NO_SIMD -O3 -ffast-math",
-    );
+    std::env::set_var("BINDGEN_EXTRA_CLANG_ARGS", "-D TINYBVH_NO_SIMD");
 
     // Generate rust bindings
     let bindings = bindgen::Builder::default()

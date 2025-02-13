@@ -3,6 +3,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(clashing_extern_declarations)]
+#![allow(improper_ctypes)]
 
 use glam::Vec3;
 

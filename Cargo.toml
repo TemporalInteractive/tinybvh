@@ -1,19 +1,45 @@
 [package]
 name = "tinybvh"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+rust-version = "1.80"
+description = "Safe Rust bindings to tinybvh, Jacco Bikker's header-only BVH library for ray tracing and spatial queries"
+license = "MIT"
+readme = "README.md"
+keywords = ["bvh", "raytracing", "graphics", "acceleration-structure", "geometry"]
+categories = ["graphics", "api-bindings", "game-development"]
+links = "tinybvh_c"
+include = [
+    "Cargo.toml",
+    "LICENSE",
+    "README.md",
+    "build.rs",
+    "src/**",
+    "ffi/tinybvh_c.h",
+    "ffi/tinybvh_c.cpp",
+    "ffi/tinybvh/LICENSE",
+    "ffi/tinybvh/tiny_bvh.h",
+    "ffi/tinybvh/tiny_bvh_base.h",
+    "ffi/tinybvh/tiny_bvh_x86_float.h",
+    "ffi/tinybvh/tiny_bvh_x86_double.h",
+    "ffi/tinybvh/tiny_bvh_arm_float.h",
+    "ffi/tinybvh/tiny_bvh_arm_double.h",
+]
 
 [dependencies]
-glam = { version = "0.29.2", default-features = false, features = ["std"] }
+glam = { version = "0.34", default-features = false, features = ["std", "f64"] }
 
 [features]
 default = ["simd"]
+# Compile tinybvh with its SIMD kernels: AVX2 + FMA on x86-64, NEON on AArch64. The resulting
+# binary requires a CPU with those instructions. Disable to build portable (slower) code.
 simd = []
-unsafe-send-sync = []
 
 [build-dependencies]
-bindgen = "0.69.4"
-cc = { version = "1.0", features = ["parallel"] }
+cc = { version = "1.2", features = ["parallel"] }
 
 [dev-dependencies]
-approx = "0.5.1"
+approx = "0.5"
+
+[package.metadata.docs.rs]
+all-features = true

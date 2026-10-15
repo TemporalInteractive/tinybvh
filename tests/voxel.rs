@@ -15,7 +15,11 @@ const DIM: f32 = 256.0;
 
 /// Center of voxel `(x, y, z)` in object space.
 fn center(x: u32, y: u32, z: u32) -> Vec3 {
-    Vec3::new((x as f32 + 0.5) / DIM, (y as f32 + 0.5) / DIM, (z as f32 + 0.5) / DIM)
+    Vec3::new(
+        (x as f32 + 0.5) / DIM,
+        (y as f32 + 0.5) / DIM,
+        (z as f32 + 0.5) / DIM,
+    )
 }
 
 #[test]
@@ -50,7 +54,10 @@ fn set_update_and_trace() {
     assert!(steps > 0);
     assert!(ray.hit.is_hit());
     assert_relative_eq!(ray.hit.t, 1.5, epsilon = 1e-5);
-    assert_eq!(ray.hit.prim, 7, "the voxel value is reported as the primitive");
+    assert_eq!(
+        ray.hit.prim, 7,
+        "the voxel value is reported as the primitive"
+    );
     assert_eq!(ray.hit.inst, 0);
 
     // Rays that miss the voxel, and rays that miss the object entirely.
@@ -120,7 +127,10 @@ fn entry_distance_per_axis_and_normals() {
         assert_relative_eq!(ray.hit.t, expected_t, epsilon = 1e-4);
         assert_eq!(ray.hit.prim, 1);
         let n = voxels.normal(&ray);
-        assert!(n.abs_diff_eq(expected_normal, 1e-6), "normal {n} for ray along {dir}");
+        assert!(
+            n.abs_diff_eq(expected_normal, 1e-6),
+            "normal {n} for ray along {dir}"
+        );
         // A ray that already records the hit is not occluded by it; a fresh one is.
         assert!(!voxels.is_occluded(&ray));
         assert!(voxels.is_occluded(&Ray::new(origin, dir)));
@@ -216,18 +226,26 @@ fn tlas_with_a_scaled_voxel_instance_and_a_triangle_blas() {
 
     // The voxel object is scaled to 10 units and placed so that it spans [-5, 5] in x and z and
     // [-2, 8] in y; its slab top is then at y = -2 + 16 / 256 * 10 = -1.375.
-    let voxel_transform = Mat4::from_translation(Vec3::new(-5.0, -2.0, -5.0)) * Mat4::from_scale(Vec3::splat(10.0));
+    let voxel_transform =
+        Mat4::from_translation(Vec3::new(-5.0, -2.0, -5.0)) * Mat4::from_scale(Vec3::splat(10.0));
     let instances = vec![
         BlasInstance::with_transform(0, voxel_transform).with_mask(1),
         BlasInstance::new(1).with_mask(2),
-        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(20.0, 0.0, 0.0)) * Mat4::from_scale(Vec3::splat(2.0))).with_mask(4),
+        BlasInstance::with_transform(
+            0,
+            Mat4::from_translation(Vec3::new(20.0, 0.0, 0.0)) * Mat4::from_scale(Vec3::splat(2.0)),
+        )
+        .with_mask(4),
     ];
     let blasses: Vec<Arc<dyn Blas>> = vec![Arc::new(voxels), Arc::new(mesh)];
     let mut tlas = Bvh::new();
     tlas.build_tlas(instances, blasses);
     assert_eq!(tlas.prim_count(), 3);
     let (mn, mx) = tlas.instances()[0].aabb();
-    assert!(mn.abs_diff_eq(Vec3::new(-5.0, -2.0, -5.0), 1e-5) && mx.abs_diff_eq(Vec3::new(5.0, 8.0, 5.0), 1e-5));
+    assert!(
+        mn.abs_diff_eq(Vec3::new(-5.0, -2.0, -5.0), 1e-5)
+            && mx.abs_diff_eq(Vec3::new(5.0, 8.0, 5.0), 1e-5)
+    );
 
     // Straight down: the voxel slab.
     let mut down = Ray::new(Vec3::ZERO, -Vec3::Y);
@@ -277,7 +295,8 @@ fn stale_top_grid_is_detected() {
     assert!(voxels.is_top_grid_stale());
     let c = center(3, 3, 3);
     let ray = Ray::new(Vec3::new(c.x, c.y, -1.0), Vec3::Z);
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| voxels.is_occluded(&ray)));
+    let result =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| voxels.is_occluded(&ray)));
     assert!(result.is_err());
     voxels.update_top_grid();
     assert!(voxels.is_occluded(&ray));

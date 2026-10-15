@@ -7,7 +7,9 @@ use std::sync::Arc;
 
 use approx::assert_relative_eq;
 use glam::{Mat4, Vec3, Vec4};
-use tinybvh::{Aabb, BlasInstance, BuildSettings, Bvh, CustomGeometry, Error, Geometry, Layout, Ray, FAR};
+use tinybvh::{
+    Aabb, BlasInstance, BuildSettings, Bvh, CustomGeometry, Error, Geometry, Layout, Ray, FAR,
+};
 
 use common::{check_against_brute_force, grid_indexed, grid_soup, random_triangles, triangle_at};
 
@@ -100,55 +102,87 @@ fn builders_match_brute_force() {
     let verts = random_triangles(2000, 7);
     type Variant<'a> = (&'a str, Box<dyn Fn(&mut Bvh)>);
     let variants: Vec<Variant> = vec![
-        ("default", Box::new(|b: &mut Bvh| b.build(random_triangles(2000, 7)))),
-        ("hq", Box::new(|b: &mut Bvh| b.build_hq(random_triangles(2000, 7)))),
-        ("quick", Box::new(|b: &mut Bvh| b.build_quick(random_triangles(2000, 7)))),
+        (
+            "default",
+            Box::new(|b: &mut Bvh| b.build(random_triangles(2000, 7))),
+        ),
+        (
+            "hq",
+            Box::new(|b: &mut Bvh| b.build_hq(random_triangles(2000, 7))),
+        ),
+        (
+            "quick",
+            Box::new(|b: &mut Bvh| b.build_quick(random_triangles(2000, 7))),
+        ),
         (
             "binned",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { binned_bvh: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    binned_bvh: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "sbvh",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    binned_bvh: true,
+                    use_spatial_splits: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "scalar",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { use_simd_if_available: false, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_simd_if_available: false,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "single-threaded",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    enable_threading: false,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "full-sweep",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { use_full_sweep: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_full_sweep: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "hploc",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { use_hploc: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_hploc: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "presplit+optimize",
             Box::new(|b: &mut Bvh| {
-                b.set_settings(&BuildSettings { use_presplitting: true, post_optimize: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_presplitting: true,
+                    post_optimize: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
@@ -172,7 +206,10 @@ fn builders_match_brute_force() {
             simd.intersect(ray);
         });
     } else {
-        assert_eq!(simd.build_simd(verts.clone()), Err(Error::SimdBuilderUnavailable));
+        assert_eq!(
+            simd.build_simd(verts.clone()),
+            Err(Error::SimdBuilderUnavailable)
+        );
     }
 }
 
@@ -224,7 +261,11 @@ fn refit_is_refused_when_not_possible() {
     assert_eq!(empty.refit(), Err(Error::NotBuilt));
 
     let mut hq = Bvh::new();
-    hq.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+    hq.set_settings(&BuildSettings {
+        binned_bvh: true,
+        use_spatial_splits: true,
+        ..Default::default()
+    });
     hq.build(random_triangles(500, 1));
     assert!(!hq.is_refittable());
     assert_eq!(hq.refit(), Err(Error::NotRefittable));
@@ -238,7 +279,10 @@ fn refit_is_refused_when_not_possible() {
 fn maintenance_operations() {
     let verts = random_triangles(3000, 21);
     let mut bvh = Bvh::new();
-    bvh.set_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+    bvh.set_settings(&BuildSettings {
+        enable_threading: false,
+        ..Default::default()
+    });
     bvh.build(verts.clone());
     let nodes_before = bvh.node_count();
     let leaves_before = bvh.leaf_count();
@@ -251,7 +295,10 @@ fn maintenance_operations() {
     let before = bvh.sah_cost(0);
     bvh.optimize(10);
     let after = bvh.sah_cost(0);
-    assert!(after <= before * 1.001, "optimize made the SAH cost worse: {before} -> {after}");
+    assert!(
+        after <= before * 1.001,
+        "optimize made the SAH cost worse: {before} -> {after}"
+    );
     check_against_brute_force(&verts, 100, 2, |ray| {
         bvh.intersect(ray);
     });
@@ -269,7 +316,10 @@ fn maintenance_operations() {
     assert!(bvh.leaf_count() < bvh.prim_count());
     bvh.compact();
     assert!(bvh.has_ordered_nodes());
-    assert!(!bvh.may_have_holes(), "compaction clears the holes flag left by merge_leafs");
+    assert!(
+        !bvh.may_have_holes(),
+        "compaction clears the holes flag left by merge_leafs"
+    );
     bvh.optimize(2);
     bvh.refit().unwrap();
     check_against_brute_force(&verts, 50, 4, |ray| {
@@ -293,7 +343,10 @@ fn maintenance_operations() {
             assert!(l < nodes.len() as u32 && r < nodes.len() as u32);
         }
     }
-    assert!(seen.iter().all(|&s| s), "every primitive is referenced by a leaf");
+    assert!(
+        seen.iter().all(|&s| s),
+        "every primitive is referenced by a leaf"
+    );
 }
 
 #[test]
@@ -352,7 +405,11 @@ impl CustomGeometry for Spheres {
 #[test]
 fn custom_geometry() {
     let mut bvh = Bvh::new();
-    bvh.build_custom(Spheres(vec![(Vec3::new(0.0, 0.0, 5.0), 1.0), (Vec3::new(8.0, 0.0, 0.0), 1.0), (Vec3::new(0.0, -7.0, 0.0), 2.0)]));
+    bvh.build_custom(Spheres(vec![
+        (Vec3::new(0.0, 0.0, 5.0), 1.0),
+        (Vec3::new(8.0, 0.0, 0.0), 1.0),
+        (Vec3::new(0.0, -7.0, 0.0), 2.0),
+    ]));
     assert!(bvh.has_custom_geometry());
     assert_eq!(bvh.prim_count(), 3);
     assert!(bvh.custom_geometry().is_some());
@@ -374,7 +431,10 @@ fn custom_geometry() {
 
     // Boxes via the built-in Aabb geometry.
     let mut boxes = Bvh::new();
-    boxes.build_custom(vec![Aabb::new(Vec3::new(-1.0, -1.0, 2.0), Vec3::new(1.0, 1.0, 3.0)), Aabb::new(Vec3::splat(10.0), Vec3::splat(11.0))]);
+    boxes.build_custom(vec![
+        Aabb::new(Vec3::new(-1.0, -1.0, 2.0), Vec3::new(1.0, 1.0, 3.0)),
+        Aabb::new(Vec3::splat(10.0), Vec3::splat(11.0)),
+    ]);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     boxes.intersect(&mut ray);
     assert_relative_eq!(ray.hit.t, 2.0, epsilon = 1e-6);
@@ -427,8 +487,10 @@ fn tlas_with_instances_and_masks() {
 
     let instances = vec![
         BlasInstance::new(0),
-        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(10.0, 0.0, 0.0))).with_mask(2),
-        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(0.0, 0.0, -10.0))).with_mask(4),
+        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(10.0, 0.0, 0.0)))
+            .with_mask(2),
+        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(0.0, 0.0, -10.0)))
+            .with_mask(4),
     ];
     let mut tlas = Bvh::new();
     tlas.build_tlas(instances, vec![blas.clone()]);
@@ -442,7 +504,9 @@ fn tlas_with_instances_and_masks() {
     let (mn, mx) = tlas.instances()[1].aabb();
     assert_relative_eq!(mn.x, 9.0, epsilon = 1e-5);
     assert_relative_eq!(mx.x, 11.0, epsilon = 1e-5);
-    assert!(tlas.instances()[1].inverse_transform().abs_diff_eq(Mat4::from_translation(Vec3::new(-10.0, 0.0, 0.0)), 1e-6));
+    assert!(tlas.instances()[1]
+        .inverse_transform()
+        .abs_diff_eq(Mat4::from_translation(Vec3::new(-10.0, 0.0, 0.0)), 1e-6));
 
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     tlas.intersect(&mut ray);
@@ -471,13 +535,17 @@ fn tlas_with_instances_and_masks() {
 
     // Bundles are available on a TLAS.
     let n = tinybvh::bundle_rays();
-    let mut rays: Vec<Ray> = (0..n).map(|i| Ray::new(Vec3::new(i as f32 * 0.005, 0.0, 0.0), Vec3::Z)).collect();
+    let mut rays: Vec<Ray> = (0..n)
+        .map(|i| Ray::new(Vec3::new(i as f32 * 0.005, 0.0, 0.0), Vec3::Z))
+        .collect();
     tlas.intersect_bundle(&mut rays).unwrap();
     for ray in &rays {
         assert_relative_eq!(ray.hit.t, 23.0, epsilon = 1e-3);
     }
     let mut occluded = vec![false; n];
-    let mut rays: Vec<Ray> = (0..n).map(|i| Ray::new(Vec3::new(i as f32 * 0.005, 0.0, 0.0), Vec3::Z)).collect();
+    let mut rays: Vec<Ray> = (0..n)
+        .map(|i| Ray::new(Vec3::new(i as f32 * 0.005, 0.0, 0.0), Vec3::Z))
+        .collect();
     tlas.is_occluded_bundle(&mut rays, &mut occluded).unwrap();
     assert!(occluded.iter().all(|&o| o));
     let mut blas_only = Bvh::new();
@@ -497,7 +565,10 @@ fn tlas_over_custom_blas_passes_state() {
     blas.build_custom(Spheres(vec![(Vec3::new(0.0, 0.0, 5.0), 1.0)]));
     let mut tlas = Bvh::new();
     tlas.build_tlas(
-        vec![BlasInstance::new(0).with_mask(1), BlasInstance::with_transform(0, Mat4::from_translation(Vec3::X * 20.0)).with_mask(2)],
+        vec![
+            BlasInstance::new(0).with_mask(1),
+            BlasInstance::with_transform(0, Mat4::from_translation(Vec3::X * 20.0)).with_mask(2),
+        ],
         vec![Arc::new(blas)],
     );
     let mut ray = Ray::new(Vec3::new(20.0, 0.0, 0.0), Vec3::Z).with_mask(2);
@@ -538,21 +609,34 @@ fn save_and_load() {
 
     // Wrong geometry is rejected and leaves the structure empty.
     let mut wrong = Bvh::new();
-    assert!(matches!(wrong.load(&path, random_triangles(10, 1)), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(&path, random_triangles(10, 1)),
+        Err(Error::LoadFailed(_))
+    ));
     assert!(!wrong.is_built());
-    assert!(matches!(Bvh::load_self_contained(dir.join("missing.bvh")), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        Bvh::load_self_contained(dir.join("missing.bvh")),
+        Err(Error::LoadFailed(_))
+    ));
 
     // Without geometry a self-contained load is refused.
     let nodes_only = dir.join("nodes.bvh");
     bvh.save(&nodes_only, false).unwrap();
-    assert!(matches!(Bvh::load_self_contained(&nodes_only), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        Bvh::load_self_contained(&nodes_only),
+        Err(Error::LoadFailed(_))
+    ));
     let mut bound2 = Bvh::new();
     bound2.load(&nodes_only, verts.clone()).unwrap();
     assert_eq!(bound2.nodes(), &reference_nodes[..]);
 
     assert_eq!(Bvh::new().save(&path, true), Err(Error::NotBuilt));
     let mut loaded = Bvh::load_self_contained(&path).unwrap();
-    assert_eq!(loaded.split_leafs(1), Err(Error::NotRebuildable), "a loaded tree has no primitive bounds");
+    assert_eq!(
+        loaded.split_leafs(1),
+        Err(Error::NotRebuildable),
+        "a loaded tree has no primitive bounds"
+    );
     loaded.optimize(2); // but can still be optimized and refitted
     loaded.refit().unwrap();
     std::fs::remove_dir_all(&dir).ok();
@@ -568,7 +652,10 @@ fn opacity_micro_maps() {
     assert_eq!(bvh.opacity_micro_map_n(), 1);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
-    assert!(!ray.hit.is_hit(), "a fully transparent map hides the triangle");
+    assert!(
+        !ray.hit.is_hit(),
+        "a fully transparent map hides the triangle"
+    );
     bvh.set_opacity_micro_maps(vec![1u32], 1);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
@@ -631,7 +718,10 @@ fn partial_triangle_panics() {
 #[test]
 #[should_panic(expected = "out of range")]
 fn bad_index_panics() {
-    Bvh::new().build(Geometry::indexed(vec![Vec4::ZERO, Vec4::ONE, Vec4::X], vec![0, 1, 3]));
+    Bvh::new().build(Geometry::indexed(
+        vec![Vec4::ZERO, Vec4::ONE, Vec4::X],
+        vec![0, 1, 3],
+    ));
 }
 
 #[test]

@@ -8,7 +8,10 @@ use std::sync::Arc;
 
 use approx::assert_relative_eq;
 use glam::{Vec3, Vec4};
-use tinybvh::{BuildSettings, Bvh, Bvh4Cpu, Bvh8Cpu, Error, Geometry, Layout, Mbvh4, Mbvh4Node, Mbvh8, Mbvh8Node, Ray};
+use tinybvh::{
+    BuildSettings, Bvh, Bvh4Cpu, Bvh8Cpu, Error, Geometry, Layout, Mbvh4, Mbvh4Node, Mbvh8,
+    Mbvh8Node, Ray,
+};
 
 use common::{grid_indexed, random_triangles, triangle_at};
 
@@ -212,7 +215,12 @@ fn check_invariants<W: Wide>(mbvh: &W, exact_coverage: bool) {
     assert!(!nodes.is_empty(), "{}", W::NAME);
     assert_eq!(nodes.len(), mbvh.used_nodes() as usize);
     let (mn, mx) = mbvh.aabb();
-    assert_eq!(nodes[0].bounds(), (mn, mx), "{}: root bounds equal aabb()", W::NAME);
+    assert_eq!(
+        nodes[0].bounds(),
+        (mn, mx),
+        "{}: root bounds equal aabb()",
+        W::NAME
+    );
 
     let prim_count = mbvh.prim_count() as usize;
     let mut references = vec![0u32; prim_count];
@@ -220,41 +228,91 @@ fn check_invariants<W: Wide>(mbvh: &W, exact_coverage: bool) {
     reachable[0] = true;
     for (i, node) in nodes.iter().enumerate() {
         let (nmin, nmax) = node.bounds();
-        assert!(nmin.cmple(nmax).all(), "{}: node {i} has inverted bounds", W::NAME);
+        assert!(
+            nmin.cmple(nmax).all(),
+            "{}: node {i} has inverted bounds",
+            W::NAME
+        );
         if node.is_leaf() {
             assert!(node.children().is_empty());
             let range = node.prim_range();
             assert!(!range.is_empty());
-            assert!(range.end <= prim_indices.len(), "{}: leaf {i} range {range:?} exceeds {} indices", W::NAME, prim_indices.len());
+            assert!(
+                range.end <= prim_indices.len(),
+                "{}: leaf {i} range {range:?} exceeds {} indices",
+                W::NAME,
+                prim_indices.len()
+            );
             for &p in &prim_indices[range] {
-                assert!((p as usize) < prim_count, "{}: primitive index {p} out of range", W::NAME);
+                assert!(
+                    (p as usize) < prim_count,
+                    "{}: primitive index {p} out of range",
+                    W::NAME
+                );
                 references[p as usize] += 1;
             }
         } else {
-            assert!(node.child_count() as usize <= W::Node::WIDTH, "{}: node {i} has {} children", W::NAME, node.child_count());
-            assert!(node.child_count() >= 1, "{}: interior node {i} without children", W::NAME);
+            assert!(
+                node.child_count() as usize <= W::Node::WIDTH,
+                "{}: node {i} has {} children",
+                W::NAME,
+                node.child_count()
+            );
+            assert!(
+                node.child_count() >= 1,
+                "{}: interior node {i} without children",
+                W::NAME
+            );
             assert_eq!(node.children().len(), node.child_count() as usize);
             assert!(node.prim_range().is_empty());
             for &c in node.children() {
-                assert!((c as usize) < nodes.len(), "{}: child {c} of node {i} out of range", W::NAME);
-                assert!(c as usize > i, "{}: child {c} of node {i} does not follow its parent", W::NAME);
-                assert!(!reachable[c as usize], "{}: node {c} has two parents", W::NAME);
+                assert!(
+                    (c as usize) < nodes.len(),
+                    "{}: child {c} of node {i} out of range",
+                    W::NAME
+                );
+                assert!(
+                    c as usize > i,
+                    "{}: child {c} of node {i} does not follow its parent",
+                    W::NAME
+                );
+                assert!(
+                    !reachable[c as usize],
+                    "{}: node {c} has two parents",
+                    W::NAME
+                );
                 reachable[c as usize] = true;
             }
             // Children lie inside their parent.
             for &c in node.children() {
                 let (cmin, cmax) = nodes[c as usize].bounds();
-                assert!(cmin.cmpge(nmin - 1e-5).all() && cmax.cmple(nmax + 1e-5).all(), "{}: child {c} sticks out of node {i}", W::NAME);
+                assert!(
+                    cmin.cmpge(nmin - 1e-5).all() && cmax.cmple(nmax + 1e-5).all(),
+                    "{}: child {c} sticks out of node {i}",
+                    W::NAME
+                );
             }
         }
     }
     if !mbvh.may_have_holes() {
-        assert!(reachable.iter().all(|&r| r), "{}: every node is reachable", W::NAME);
+        assert!(
+            reachable.iter().all(|&r| r),
+            "{}: every node is reachable",
+            W::NAME
+        );
     }
     if exact_coverage {
-        assert!(references.iter().all(|&r| r == 1), "{}: every primitive is referenced exactly once", W::NAME);
+        assert!(
+            references.iter().all(|&r| r == 1),
+            "{}: every primitive is referenced exactly once",
+            W::NAME
+        );
     } else {
-        assert!(references.iter().all(|&r| r >= 1), "{}: every primitive is referenced", W::NAME);
+        assert!(
+            references.iter().all(|&r| r >= 1),
+            "{}: every primitive is referenced",
+            W::NAME
+        );
     }
 }
 
@@ -302,7 +360,11 @@ fn build_variants<W: Wide>() {
     assert_eq!(hq.refit(), Err(Error::NotRefittable));
 
     // Settings variants.
-    let mut single = W::new().with_settings(&BuildSettings { enable_threading: false, binned_bvh: true, ..Default::default() });
+    let mut single = W::new().with_settings(&BuildSettings {
+        enable_threading: false,
+        binned_bvh: true,
+        ..Default::default()
+    });
     single.build(Geometry::new(verts.clone()));
     check_invariants(&single, true);
     let mut hq_indexed = W::new();
@@ -352,12 +414,19 @@ fn refit_moves_bounds<W: Wide>() {
 
 fn optimize_not_worse<W: Wide>() {
     let verts = random_triangles(3000, 21);
-    let mut mbvh = W::new().with_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+    let mut mbvh = W::new().with_settings(&BuildSettings {
+        enable_threading: false,
+        ..Default::default()
+    });
     mbvh.build(Geometry::new(verts.clone()));
     let before = mbvh.sah_cost(0);
     mbvh.optimize(10).unwrap();
     let after = mbvh.sah_cost(0);
-    assert!(after <= before * 1.001, "{}: optimize made the SAH cost worse: {before} -> {after}", W::NAME);
+    assert!(
+        after <= before * 1.001,
+        "{}: optimize made the SAH cost worse: {before} -> {after}",
+        W::NAME
+    );
     assert_eq!(mbvh.prim_count(), 3000);
     check_invariants(&mbvh, true);
     mbvh.refit().unwrap();
@@ -409,14 +478,22 @@ fn from_bvh_conversion<W: Wide>() {
     let (mn, mx) = mbvh.aabb();
     assert_relative_eq!(mn.z, bmin.z + 1.0, epsilon = 1e-5);
     assert_relative_eq!(mx.z, bmax.z + 1.0, epsilon = 1e-5);
-    assert_eq!(mbvh.source_bvh().unwrap().aabb(), (mn, mx), "{}: the Bvh was refitted too", W::NAME);
+    assert_eq!(
+        mbvh.source_bvh().unwrap().aabb(),
+        (mn, mx),
+        "{}: the Bvh was refitted too",
+        W::NAME
+    );
     check_invariants(&mbvh, true);
     mbvh.optimize(3).unwrap();
     assert_eq!(mbvh.aabb(), (mn, mx));
     check_invariants(&mbvh, true);
 
     // Converted into a CPU layout, it traces the moved geometry.
-    let moved: Vec<Vec4> = verts.iter().map(|v| *v + Vec4::new(0.0, 0.0, 1.0, 0.0)).collect();
+    let moved: Vec<Vec4> = verts
+        .iter()
+        .map(|v| *v + Vec4::new(0.0, 0.0, 1.0, 0.0))
+        .collect();
     let mut rng = common::Rng::new(42);
     let mut rays: Vec<Ray> = (0..300)
         .map(|_| {
@@ -452,7 +529,11 @@ fn from_bvh_conversion<W: Wide>() {
 }
 
 fn load_self_contained<W: Wide>() {
-    let dir = std::env::temp_dir().join(format!("tinybvh-rs-mbvh-{}-{}", W::NAME.to_lowercase(), std::process::id()));
+    let dir = std::env::temp_dir().join(format!(
+        "tinybvh-rs-mbvh-{}-{}",
+        W::NAME.to_lowercase(),
+        std::process::id()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
     let verts = random_triangles(1000, 5);
     let mut bvh = Bvh::new();
@@ -488,8 +569,14 @@ fn load_self_contained<W: Wide>() {
         }
     }
 
-    assert!(matches!(W::load_self_contained(&without_geometry), Err(Error::LoadFailed(_))));
-    assert!(matches!(W::load_self_contained(&dir.join("missing.bvh")), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        W::load_self_contained(&without_geometry),
+        Err(Error::LoadFailed(_))
+    ));
+    assert!(matches!(
+        W::load_self_contained(&dir.join("missing.bvh")),
+        Err(Error::LoadFailed(_))
+    ));
     std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -630,16 +717,40 @@ fn mbvh8_clear_and_threads() {
 
 #[test]
 fn node_helpers() {
-    let leaf = Mbvh4Node { aabb_min: Vec3::ZERO, first_tri: 7, aabb_max: Vec3::ONE, tri_count: 3, child: [9; 4], child_count: 0, dummy: [0; 3] };
+    let leaf = Mbvh4Node {
+        aabb_min: Vec3::ZERO,
+        first_tri: 7,
+        aabb_max: Vec3::ONE,
+        tri_count: 3,
+        child: [9; 4],
+        child_count: 0,
+        dummy: [0; 3],
+    };
     assert!(leaf.is_leaf());
     assert!(leaf.children().is_empty());
     assert_eq!(leaf.prim_range(), 7..10);
     assert_eq!(leaf.half_area(), 3.0);
-    let interior = Mbvh4Node { aabb_min: Vec3::ZERO, first_tri: 0, aabb_max: Vec3::ONE, tri_count: 0, child: [1, 2, 3, 0], child_count: 3, dummy: [0; 3] };
+    let interior = Mbvh4Node {
+        aabb_min: Vec3::ZERO,
+        first_tri: 0,
+        aabb_max: Vec3::ONE,
+        tri_count: 0,
+        child: [1, 2, 3, 0],
+        child_count: 3,
+        dummy: [0; 3],
+    };
     assert!(!interior.is_leaf());
     assert_eq!(interior.children(), &[1, 2, 3]);
     assert!(interior.prim_range().is_empty());
-    let wide = Mbvh8Node { aabb_min: Vec3::ZERO, first_tri: 0, aabb_max: Vec3::new(2.0, 1.0, 1.0), tri_count: 0, child: [1, 2, 3, 4, 5, 6, 7, 8], child_count: 8, dummy: [0; 3] };
+    let wide = Mbvh8Node {
+        aabb_min: Vec3::ZERO,
+        first_tri: 0,
+        aabb_max: Vec3::new(2.0, 1.0, 1.0),
+        tri_count: 0,
+        child: [1, 2, 3, 4, 5, 6, 7, 8],
+        child_count: 8,
+        dummy: [0; 3],
+    };
     assert_eq!(wide.children().len(), 8);
     assert_eq!(wide.half_area(), 5.0);
     assert_eq!(std::mem::size_of::<Mbvh4Node>(), 64);

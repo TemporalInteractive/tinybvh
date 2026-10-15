@@ -45,13 +45,19 @@ pub struct Geometry {
 impl Geometry {
     /// A triangle soup: `vertices.len()` must be a non-zero multiple of three.
     pub fn new(vertices: Vec<Vec4>) -> Self {
-        Geometry { vertices, indices: None }
+        Geometry {
+            vertices,
+            indices: None,
+        }
     }
 
     /// Indexed triangles: `indices.len()` must be a non-zero multiple of three and every index
     /// must be below `vertices.len()`.
     pub fn indexed(vertices: Vec<Vec4>, indices: Vec<u32>) -> Self {
-        Geometry { vertices, indices: Some(indices) }
+        Geometry {
+            vertices,
+            indices: Some(indices),
+        }
     }
 
     /// Number of triangles.
@@ -65,16 +71,27 @@ impl Geometry {
     /// The three vertex positions of triangle `tri`.
     pub fn triangle(&self, tri: usize) -> [Vec3; 3] {
         let [i0, i1, i2] = match &self.indices {
-            Some(indices) => [indices[tri * 3] as usize, indices[tri * 3 + 1] as usize, indices[tri * 3 + 2] as usize],
+            Some(indices) => [
+                indices[tri * 3] as usize,
+                indices[tri * 3 + 1] as usize,
+                indices[tri * 3 + 2] as usize,
+            ],
             None => [tri * 3, tri * 3 + 1, tri * 3 + 2],
         };
-        [self.vertices[i0].truncate(), self.vertices[i1].truncate(), self.vertices[i2].truncate()]
+        [
+            self.vertices[i0].truncate(),
+            self.vertices[i1].truncate(),
+            self.vertices[i2].truncate(),
+        ]
     }
 
     /// Panics with a clear message when the data is not valid input for tinybvh. Called before
     /// every build; this is also what keeps the C library from reading out of bounds.
     pub(crate) fn validate(&self) {
-        assert!(!self.vertices.is_empty(), "tinybvh: geometry has no vertices");
+        assert!(
+            !self.vertices.is_empty(),
+            "tinybvh: geometry has no vertices"
+        );
         assert!(
             u32::try_from(self.vertices.len()).is_ok(),
             "tinybvh: single precision layouts support at most 2^32 - 1 vertices"
@@ -86,7 +103,10 @@ impl Geometry {
                 self.vertices.len()
             ),
             Some(indices) => {
-                assert!(!indices.is_empty(), "tinybvh: indexed geometry has no indices");
+                assert!(
+                    !indices.is_empty(),
+                    "tinybvh: indexed geometry has no indices"
+                );
                 assert!(
                     indices.len() % 3 == 0,
                     "tinybvh: indexed geometry needs a multiple of three indices, got {}",
@@ -94,7 +114,10 @@ impl Geometry {
                 );
                 let n = self.vertices.len() as u32;
                 if let Some(bad) = indices.iter().position(|&i| i >= n) {
-                    panic!("tinybvh: index {} at position {bad} is out of range for {n} vertices", indices[bad]);
+                    panic!(
+                        "tinybvh: index {} at position {bad} is out of range for {n} vertices",
+                        indices[bad]
+                    );
                 }
             }
         }
@@ -113,7 +136,9 @@ impl Geometry {
     /// Index pointer and primitive count for the indexed build functions; `None` for a soup.
     #[inline]
     pub(crate) fn index_args(&self) -> Option<(*const u32, u32)> {
-        self.indices.as_ref().map(|i| (i.as_ptr(), (i.len() / 3) as u32))
+        self.indices
+            .as_ref()
+            .map(|i| (i.as_ptr(), (i.len() / 3) as u32))
     }
 }
 
@@ -129,12 +154,18 @@ pub struct GeometryEx {
 impl GeometryEx {
     /// A triangle soup.
     pub fn new(vertices: Vec<DVec3>) -> Self {
-        GeometryEx { vertices, indices: None }
+        GeometryEx {
+            vertices,
+            indices: None,
+        }
     }
 
     /// Indexed triangles.
     pub fn indexed(vertices: Vec<DVec3>, indices: Vec<u64>) -> Self {
-        GeometryEx { vertices, indices: Some(indices) }
+        GeometryEx {
+            vertices,
+            indices: Some(indices),
+        }
     }
 
     /// Number of triangles.
@@ -148,14 +179,21 @@ impl GeometryEx {
     /// The three vertex positions of triangle `tri`.
     pub fn triangle(&self, tri: usize) -> [DVec3; 3] {
         let [i0, i1, i2] = match &self.indices {
-            Some(indices) => [indices[tri * 3] as usize, indices[tri * 3 + 1] as usize, indices[tri * 3 + 2] as usize],
+            Some(indices) => [
+                indices[tri * 3] as usize,
+                indices[tri * 3 + 1] as usize,
+                indices[tri * 3 + 2] as usize,
+            ],
             None => [tri * 3, tri * 3 + 1, tri * 3 + 2],
         };
         [self.vertices[i0], self.vertices[i1], self.vertices[i2]]
     }
 
     pub(crate) fn validate(&self) {
-        assert!(!self.vertices.is_empty(), "tinybvh: geometry has no vertices");
+        assert!(
+            !self.vertices.is_empty(),
+            "tinybvh: geometry has no vertices"
+        );
         match &self.indices {
             None => assert!(
                 self.vertices.len() % 3 == 0,
@@ -163,7 +201,10 @@ impl GeometryEx {
                 self.vertices.len()
             ),
             Some(indices) => {
-                assert!(!indices.is_empty(), "tinybvh: indexed geometry has no indices");
+                assert!(
+                    !indices.is_empty(),
+                    "tinybvh: indexed geometry has no indices"
+                );
                 assert!(
                     indices.len() % 3 == 0,
                     "tinybvh: indexed geometry needs a multiple of three indices, got {}",
@@ -171,7 +212,10 @@ impl GeometryEx {
                 );
                 let n = self.vertices.len() as u64;
                 if let Some(bad) = indices.iter().position(|&i| i >= n) {
-                    panic!("tinybvh: index {} at position {bad} is out of range for {n} vertices", indices[bad]);
+                    panic!(
+                        "tinybvh: index {} at position {bad} is out of range for {n} vertices",
+                        indices[bad]
+                    );
                 }
             }
         }
@@ -189,7 +233,9 @@ impl GeometryEx {
 
     #[inline]
     pub(crate) fn index_args(&self) -> Option<(*const u64, u64)> {
-        self.indices.as_ref().map(|i| (i.as_ptr(), (i.len() / 3) as u64))
+        self.indices
+            .as_ref()
+            .map(|i| (i.as_ptr(), (i.len() / 3) as u64))
     }
 }
 
@@ -307,7 +353,10 @@ fn park_panic(payload: Box<dyn Any + Send>) {
 #[inline]
 pub(crate) fn rethrow_pending_panic() {
     if PANIC_PENDING.load(Ordering::Acquire) {
-        let payload = PANIC_PAYLOAD.lock().unwrap_or_else(|e| e.into_inner()).take();
+        let payload = PANIC_PAYLOAD
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
         PANIC_PENDING.store(false, Ordering::Release);
         if let Some(payload) = payload {
             resume_unwind(payload);
@@ -344,22 +393,47 @@ impl CustomHolder {
     }
 }
 
-unsafe extern "C" fn custom_aabb(prim: u32, bmin: *mut ffi::tbvh_vec3, bmax: *mut ffi::tbvh_vec3, user: *mut c_void) {
+unsafe extern "C" fn custom_aabb(
+    prim: u32,
+    bmin: *mut ffi::tbvh_vec3,
+    bmax: *mut ffi::tbvh_vec3,
+    user: *mut c_void,
+) {
     let geometry: &dyn CustomGeometry = &**(user as *const Box<dyn CustomGeometry>);
     match catch_unwind(AssertUnwindSafe(|| geometry.aabb(prim))) {
         Ok((mn, mx)) => {
-            *bmin = ffi::tbvh_vec3 { x: mn.x, y: mn.y, z: mn.z };
-            *bmax = ffi::tbvh_vec3 { x: mx.x, y: mx.y, z: mx.z };
+            *bmin = ffi::tbvh_vec3 {
+                x: mn.x,
+                y: mn.y,
+                z: mn.z,
+            };
+            *bmax = ffi::tbvh_vec3 {
+                x: mx.x,
+                y: mx.y,
+                z: mx.z,
+            };
         }
         Err(payload) => {
             park_panic(payload);
-            *bmin = ffi::tbvh_vec3 { x: 0.0, y: 0.0, z: 0.0 };
-            *bmax = ffi::tbvh_vec3 { x: 0.0, y: 0.0, z: 0.0 };
+            *bmin = ffi::tbvh_vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            *bmax = ffi::tbvh_vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
         }
     }
 }
 
-unsafe extern "C" fn custom_intersect(ray: *mut ffi::tbvh_ray, prim: u32, user: *mut c_void) -> bool {
+unsafe extern "C" fn custom_intersect(
+    ray: *mut ffi::tbvh_ray,
+    prim: u32,
+    user: *mut c_void,
+) -> bool {
     let geometry: &dyn CustomGeometry = &**(user as *const Box<dyn CustomGeometry>);
     let ray = &mut *(ray as *mut Ray);
     match catch_unwind(AssertUnwindSafe(|| geometry.intersect(ray, prim))) {
@@ -371,7 +445,11 @@ unsafe extern "C" fn custom_intersect(ray: *mut ffi::tbvh_ray, prim: u32, user: 
     }
 }
 
-unsafe extern "C" fn custom_occluded(ray: *const ffi::tbvh_ray, prim: u32, user: *mut c_void) -> bool {
+unsafe extern "C" fn custom_occluded(
+    ray: *const ffi::tbvh_ray,
+    prim: u32,
+    user: *mut c_void,
+) -> bool {
     let geometry: &dyn CustomGeometry = &**(user as *const Box<dyn CustomGeometry>);
     let ray = &*(ray as *const Ray);
     match catch_unwind(AssertUnwindSafe(|| geometry.is_occluded(ray, prim))) {
@@ -412,22 +490,47 @@ impl CustomHolderEx {
     }
 }
 
-unsafe extern "C" fn custom_aabb_ex(prim: u64, bmin: *mut ffi::tbvh_dbl3, bmax: *mut ffi::tbvh_dbl3, user: *mut c_void) {
+unsafe extern "C" fn custom_aabb_ex(
+    prim: u64,
+    bmin: *mut ffi::tbvh_dbl3,
+    bmax: *mut ffi::tbvh_dbl3,
+    user: *mut c_void,
+) {
     let geometry: &dyn CustomGeometryEx = &**(user as *const Box<dyn CustomGeometryEx>);
     match catch_unwind(AssertUnwindSafe(|| geometry.aabb(prim))) {
         Ok((mn, mx)) => {
-            *bmin = ffi::tbvh_dbl3 { x: mn.x, y: mn.y, z: mn.z };
-            *bmax = ffi::tbvh_dbl3 { x: mx.x, y: mx.y, z: mx.z };
+            *bmin = ffi::tbvh_dbl3 {
+                x: mn.x,
+                y: mn.y,
+                z: mn.z,
+            };
+            *bmax = ffi::tbvh_dbl3 {
+                x: mx.x,
+                y: mx.y,
+                z: mx.z,
+            };
         }
         Err(payload) => {
             park_panic(payload);
-            *bmin = ffi::tbvh_dbl3 { x: 0.0, y: 0.0, z: 0.0 };
-            *bmax = ffi::tbvh_dbl3 { x: 0.0, y: 0.0, z: 0.0 };
+            *bmin = ffi::tbvh_dbl3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            *bmax = ffi::tbvh_dbl3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
         }
     }
 }
 
-unsafe extern "C" fn custom_intersect_ex(ray: *mut ffi::tbvh_ray_ex, prim: u64, user: *mut c_void) -> bool {
+unsafe extern "C" fn custom_intersect_ex(
+    ray: *mut ffi::tbvh_ray_ex,
+    prim: u64,
+    user: *mut c_void,
+) -> bool {
     let geometry: &dyn CustomGeometryEx = &**(user as *const Box<dyn CustomGeometryEx>);
     let ray = &mut *(ray as *mut RayEx);
     match catch_unwind(AssertUnwindSafe(|| geometry.intersect(ray, prim))) {
@@ -439,7 +542,11 @@ unsafe extern "C" fn custom_intersect_ex(ray: *mut ffi::tbvh_ray_ex, prim: u64, 
     }
 }
 
-unsafe extern "C" fn custom_occluded_ex(ray: *const ffi::tbvh_ray_ex, prim: u64, user: *mut c_void) -> bool {
+unsafe extern "C" fn custom_occluded_ex(
+    ray: *const ffi::tbvh_ray_ex,
+    prim: u64,
+    user: *mut c_void,
+) -> bool {
     let geometry: &dyn CustomGeometryEx = &**(user as *const Box<dyn CustomGeometryEx>);
     let ray = &*(ray as *const RayEx);
     match catch_unwind(AssertUnwindSafe(|| geometry.is_occluded(ray, prim))) {
@@ -476,7 +583,11 @@ pub(crate) fn vec3_from_ffi(v: ffi::tbvh_vec3) -> Vec3 {
 
 #[inline]
 pub(crate) fn vec3_to_ffi(v: Vec3) -> ffi::tbvh_vec3 {
-    ffi::tbvh_vec3 { x: v.x, y: v.y, z: v.z }
+    ffi::tbvh_vec3 {
+        x: v.x,
+        y: v.y,
+        z: v.z,
+    }
 }
 
 #[inline]
@@ -486,12 +597,19 @@ pub(crate) fn dvec3_from_ffi(v: ffi::tbvh_dbl3) -> DVec3 {
 
 #[inline]
 pub(crate) fn dvec3_to_ffi(v: DVec3) -> ffi::tbvh_dbl3 {
-    ffi::tbvh_dbl3 { x: v.x, y: v.y, z: v.z }
+    ffi::tbvh_dbl3 {
+        x: v.x,
+        y: v.y,
+        z: v.z,
+    }
 }
 
 /// Validates an opacity micro map buffer against the triangle count.
 pub(crate) fn validate_opacity_map(map: &[u32], n: u32, tri_count: u64) {
-    assert!(n > 0, "tinybvh: opacity micro map subdivision must be at least 1");
+    assert!(
+        n > 0,
+        "tinybvh: opacity micro map subdivision must be at least 1"
+    );
     let words_per_tri = (n as u64 * n as u64).div_ceil(32);
     let needed = words_per_tri * tri_count;
     assert!(

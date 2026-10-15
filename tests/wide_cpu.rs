@@ -7,7 +7,10 @@ use std::sync::Arc;
 
 use approx::assert_relative_eq;
 use glam::{Mat4, Vec3, Vec4};
-use tinybvh::{Blas, BlasInstance, BuildSettings, Bvh, Bvh4Cpu, Bvh8Cpu, Error, Geometry, Layout, Mbvh4, Mbvh8, Ray};
+use tinybvh::{
+    Blas, BlasInstance, BuildSettings, Bvh, Bvh4Cpu, Bvh8Cpu, Error, Geometry, Layout, Mbvh4,
+    Mbvh8, Ray,
+};
 
 use common::{check_against_brute_force, grid_indexed, grid_soup, random_triangles, triangle_at};
 
@@ -192,7 +195,12 @@ fn build_and_intersect<L: CpuLayout>() {
     assert!(bvh.has_intermediates());
     assert!(bvh.is_rebuildable());
     // tinybvh keeps the node count only for the intermediate tree, not for this layout.
-    assert_eq!(bvh.used_nodes(), 0, "{}: usedNodes is not maintained for the CPU layouts", L::NAME);
+    assert_eq!(
+        bvh.used_nodes(),
+        0,
+        "{}: usedNodes is not maintained for the CPU layouts",
+        L::NAME
+    );
     assert!(bvh.used_blocks() > 0);
 
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
@@ -240,7 +248,11 @@ fn occlusion_semantics<L: CpuLayout>() {
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
     assert_relative_eq!(ray.hit.t, 3.0, epsilon = 1e-5);
-    assert!(!bvh.is_occluded(&ray), "{}: a hit at t is not occluded before t", L::NAME);
+    assert!(
+        !bvh.is_occluded(&ray),
+        "{}: a hit at t is not occluded before t",
+        L::NAME
+    );
     assert!(bvh.is_occluded(&Ray::with_t_max(Vec3::ZERO, Vec3::Z, 3.0 + 1e-3)));
 
     // Occlusion from inside the slab between the triangles only sees the far one.
@@ -288,7 +300,10 @@ fn soup_and_indexed_match_brute_force<L: CpuLayout>() {
         assert!(ra.hit.is_hit() && rb.hit.is_hit());
         assert_relative_eq!(ra.hit.t, 3.0, epsilon = 1e-4);
         assert_eq!(ra.hit.prim, rb.hit.prim);
-        assert_eq!(a.is_occluded(&Ray::new(o, Vec3::Z)), b.is_occluded(&Ray::new(o, Vec3::Z)));
+        assert_eq!(
+            a.is_occluded(&Ray::new(o, Vec3::Z)),
+            b.is_occluded(&Ray::new(o, Vec3::Z))
+        );
     }
     let geometry = b.into_geometry().unwrap();
     assert_eq!(geometry.vertices, gv);
@@ -300,7 +315,11 @@ fn hq_build<L: CpuLayout>() {
     hq.build_hq(Geometry::new(verts.clone()));
     assert!(hq.is_built());
     assert_eq!(hq.prim_count(), 2000);
-    assert!(!hq.is_refittable(), "{}: spatial splits make the tree not refittable", L::NAME);
+    assert!(
+        !hq.is_refittable(),
+        "{}: spatial splits make the tree not refittable",
+        L::NAME
+    );
     assert!(hq.sah_cost() > 0.0);
     check_against_brute_force(&verts, 300, 13, |ray| {
         hq.intersect(ray);
@@ -317,7 +336,11 @@ fn hq_build<L: CpuLayout>() {
     check_against_brute_force(&verts, 100, 15, |ray| {
         settings.intersect(ray);
     });
-    let mut scalar = L::new().with_settings(&BuildSettings { use_simd_if_available: false, binned_bvh: true, ..Default::default() });
+    let mut scalar = L::new().with_settings(&BuildSettings {
+        use_simd_if_available: false,
+        binned_bvh: true,
+        ..Default::default()
+    });
     scalar.build(Geometry::new(verts.clone()));
     check_against_brute_force(&verts, 100, 16, |ray| {
         scalar.intersect(ray);
@@ -400,7 +423,11 @@ fn refit_is_refused_when_not_possible<L: CpuLayout>() {
 
     let mut converted = L::from_mbvh_over(Geometry::new(random_triangles(500, 2)));
     assert!(converted.is_built());
-    assert!(!converted.is_rebuildable(), "{}: converted from an external tree", L::NAME);
+    assert!(
+        !converted.is_rebuildable(),
+        "{}: converted from an external tree",
+        L::NAME
+    );
     assert_eq!(converted.refit(), Err(Error::NotRebuildable));
     assert_eq!(converted.optimize(5), Err(Error::NotRebuildable));
     // sah_cost still works on the referenced wide tree.
@@ -408,12 +435,19 @@ fn refit_is_refused_when_not_possible<L: CpuLayout>() {
 
     // discard_intermediates drops the trees that refit and optimize need; tinybvh itself still
     // reports the structure as rebuildable, so the wrapper has to track this on its own.
-    let mut discarded = L::new().with_settings(&BuildSettings { discard_intermediates: true, ..Default::default() });
+    let mut discarded = L::new().with_settings(&BuildSettings {
+        discard_intermediates: true,
+        ..Default::default()
+    });
     let verts = random_triangles(2000, 3);
     discarded.build(Geometry::new(verts.clone()));
     assert!(discarded.is_built());
     assert!(!discarded.has_intermediates());
-    assert!(discarded.is_rebuildable(), "{}: tinybvh reports rebuildable even with discarded intermediates", L::NAME);
+    assert!(
+        discarded.is_rebuildable(),
+        "{}: tinybvh reports rebuildable even with discarded intermediates",
+        L::NAME
+    );
     assert_eq!(discarded.refit(), Err(Error::NotRebuildable));
     assert_eq!(discarded.optimize(5), Err(Error::NotRebuildable));
     check_against_brute_force(&verts, 200, 4, |ray| {
@@ -428,13 +462,20 @@ fn refit_is_refused_when_not_possible<L: CpuLayout>() {
 
 fn optimize_does_not_hurt<L: CpuLayout>() {
     let verts = random_triangles(3000, 21);
-    let mut bvh = L::new().with_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+    let mut bvh = L::new().with_settings(&BuildSettings {
+        enable_threading: false,
+        ..Default::default()
+    });
     bvh.build(Geometry::new(verts.clone()));
     let before = bvh.sah_cost();
     assert!(before > 0.0);
     bvh.optimize(10).unwrap();
     let after = bvh.sah_cost();
-    assert!(after <= before * 1.001, "{}: optimize made the SAH cost worse: {before} -> {after}", L::NAME);
+    assert!(
+        after <= before * 1.001,
+        "{}: optimize made the SAH cost worse: {before} -> {after}",
+        L::NAME
+    );
     assert!(bvh.is_built());
     check_against_brute_force(&verts, 150, 2, |ray| {
         bvh.intersect(ray);
@@ -470,7 +511,10 @@ fn from_mbvh_matches_direct_build<L: CpuLayout>() {
             assert_eq!(a.hit.prim, b.hit.prim);
             assert_relative_eq!(a.hit.t, b.hit.t, epsilon = 1e-5);
         }
-        assert_eq!(direct.is_occluded(&Ray::new(o, d)), converted.is_occluded(&Ray::new(o, d)));
+        assert_eq!(
+            direct.is_occluded(&Ray::new(o, d)),
+            converted.is_occluded(&Ray::new(o, d))
+        );
     }
     // A fresh build over the converted structure makes it rebuildable again and releases the
     // wide tree.
@@ -527,7 +571,11 @@ fn save_and_load<L: CpuLayout>() {
     assert!(!bound.has_intermediates());
     // tinybvh restores the rebuildable flag from the file; the intermediate trees are gone
     // nonetheless, so the wrapper refuses to refit or optimize.
-    assert!(bound.is_rebuildable(), "{}: the file carries rebuildable = true", L::NAME);
+    assert!(
+        bound.is_rebuildable(),
+        "{}: the file carries rebuildable = true",
+        L::NAME
+    );
     assert_eq!(bound.refit(), Err(Error::NotRebuildable));
     assert_eq!(bound.optimize(5), Err(Error::NotRebuildable));
     assert_eq!(bound.opacity_micro_map_n(), 0);
@@ -562,9 +610,15 @@ fn save_and_load<L: CpuLayout>() {
 
     // The wrong triangle count is rejected; the structure stays empty.
     let mut wrong = L::new();
-    assert!(matches!(wrong.load(&path, Geometry::new(random_triangles(10, 1))), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(&path, Geometry::new(random_triangles(10, 1))),
+        Err(Error::LoadFailed(_))
+    ));
     assert!(!wrong.is_built());
-    assert!(matches!(L::load_self_contained(&dir.join("missing.bin")), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        L::load_self_contained(&dir.join("missing.bin")),
+        Err(Error::LoadFailed(_))
+    ));
     assert_eq!(L::new().save(&path), Err(Error::NotBuilt));
 
     // A plain Bvh file with geometry is converted on load.
@@ -580,7 +634,10 @@ fn save_and_load<L: CpuLayout>() {
     // Without geometry there is nothing to convert from.
     let nodes_only = dir.join("nodes.bvh");
     plain.save(&nodes_only, false).unwrap();
-    assert!(matches!(L::load_self_contained(&nodes_only), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        L::load_self_contained(&nodes_only),
+        Err(Error::LoadFailed(_))
+    ));
 
     // Loading into a built structure replaces it; the old geometry is released.
     let mut reused = L::new();
@@ -615,7 +672,11 @@ fn opacity_micro_maps<L: CpuLayout>() {
     assert_eq!(bvh.opacity_micro_map_n(), 1);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
-    assert!(!ray.hit.is_hit(), "{}: a fully transparent map hides the triangle", L::NAME);
+    assert!(
+        !ray.hit.is_hit(),
+        "{}: a fully transparent map hides the triangle",
+        L::NAME
+    );
     assert!(!bvh.is_occluded(&Ray::new(Vec3::ZERO, Vec3::Z)));
     bvh.set_opacity_micro_maps(vec![1u32], 1);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
@@ -629,11 +690,19 @@ fn opacity_micro_maps<L: CpuLayout>() {
     assert_eq!(bvh.opacity_micro_map_n(), 1);
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
-    assert!(!ray.hit.is_hit(), "{}: the map is kept across a refit", L::NAME);
+    assert!(
+        !ray.hit.is_hit(),
+        "{}: the map is kept across a refit",
+        L::NAME
+    );
     bvh.optimize(2).unwrap();
     let mut ray = Ray::new(Vec3::ZERO, Vec3::Z);
     bvh.intersect(&mut ray);
-    assert!(!ray.hit.is_hit(), "{}: the map is kept across an optimize", L::NAME);
+    assert!(
+        !ray.hit.is_hit(),
+        "{}: the map is kept across an optimize",
+        L::NAME
+    );
 
     bvh.clear_opacity_micro_maps();
     assert_eq!(bvh.opacity_micro_map_n(), 0);
@@ -662,7 +731,12 @@ fn opacity_micro_maps<L: CpuLayout>() {
         let mut ray = Ray::new(o, Vec3::Z);
         grid.intersect(&mut ray);
         if ray.hit.is_hit() {
-            assert!(ray.hit.u + ray.hit.v < 0.5 + 1e-4, "hit on a transparent micro-triangle: u = {}, v = {}", ray.hit.u, ray.hit.v);
+            assert!(
+                ray.hit.u + ray.hit.v < 0.5 + 1e-4,
+                "hit on a transparent micro-triangle: u = {}, v = {}",
+                ray.hit.u,
+                ray.hit.v
+            );
             hits += 1;
         } else {
             misses += 1;
@@ -677,7 +751,8 @@ fn as_blas_in_tlas<L: CpuLayout>() {
     let blas: Arc<dyn Blas> = Arc::new(blas);
     let instances = vec![
         BlasInstance::new(0),
-        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(10.0, 0.0, 0.0))).with_mask(2),
+        BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(10.0, 0.0, 0.0)))
+            .with_mask(2),
     ];
     let mut tlas = Bvh::new();
     tlas.build_tlas(instances, vec![blas.clone()]);
@@ -719,7 +794,13 @@ fn as_blas_in_tlas<L: CpuLayout>() {
     big.build(Geometry::new(verts.clone()));
     let big: Arc<dyn Blas> = Arc::new(big);
     let mut tlas2 = Bvh::new();
-    tlas2.build_tlas(vec![BlasInstance::with_transform(0, Mat4::from_translation(Vec3::new(0.0, 0.0, 5.0)))], vec![big]);
+    tlas2.build_tlas(
+        vec![BlasInstance::with_transform(
+            0,
+            Mat4::from_translation(Vec3::new(0.0, 0.0, 5.0)),
+        )],
+        vec![big],
+    );
     let mut rng = common::Rng::new(52);
     for _ in 0..200 {
         let o = Vec3::new(rng.unit() * 2.0 - 0.5, rng.unit() * 2.0 - 0.5, -1.0);
@@ -952,8 +1033,18 @@ fn layouts_agree() {
             hits += 1;
             assert_eq!(r.hit.prim, r4.hit.prim);
             assert_eq!(r.hit.prim, r8.hit.prim);
-            assert!((r.hit.t - r4.hit.t).abs() <= 1e-4, "Bvh {} vs Bvh4Cpu {}", r.hit.t, r4.hit.t);
-            assert!((r.hit.t - r8.hit.t).abs() <= 1e-4, "Bvh {} vs Bvh8Cpu {}", r.hit.t, r8.hit.t);
+            assert!(
+                (r.hit.t - r4.hit.t).abs() <= 1e-4,
+                "Bvh {} vs Bvh4Cpu {}",
+                r.hit.t,
+                r4.hit.t
+            );
+            assert!(
+                (r.hit.t - r8.hit.t).abs() <= 1e-4,
+                "Bvh {} vs Bvh8Cpu {}",
+                r.hit.t,
+                r8.hit.t
+            );
         }
         // Fresh rays: hit.t is the strict search limit for occlusion.
         let blocked = reference.is_occluded(&Ray::new(o, d));
@@ -995,7 +1086,11 @@ fn bvh4_bundles() {
     }
     let hits = rays.iter().filter(|r| r.hit.is_hit()).count();
     assert!(hits > n / 2);
-    assert!(same_prim * 10 >= hits * 9, "bundle and single-ray primitives disagree on {} of {hits} hits", hits - same_prim);
+    assert!(
+        same_prim * 10 >= hits * 9,
+        "bundle and single-ray primitives disagree on {} of {hits} hits",
+        hits - same_prim
+    );
 
     let mut rays = make_rays();
     let mut occluded = vec![false; n];
@@ -1006,7 +1101,9 @@ fn bvh4_bundles() {
     assert!(occluded.iter().filter(|&&o| o).count() > n / 2);
 
     // Rays that all miss.
-    let mut rays: Vec<Ray> = (0..n).map(|i| Ray::new(Vec3::new(i as f32 * 0.01, 0.0, 0.0), -Vec3::Z)).collect();
+    let mut rays: Vec<Ray> = (0..n)
+        .map(|i| Ray::new(Vec3::new(i as f32 * 0.01, 0.0, 0.0), -Vec3::Z))
+        .collect();
     bvh.intersect_bundle(&mut rays);
     assert!(rays.iter().all(|r| !r.hit.is_hit()));
     let mut occluded = vec![true; n];
@@ -1014,7 +1111,9 @@ fn bvh4_bundles() {
     assert!(occluded.iter().all(|&o| !o));
 
     // A limited t_max is honoured per ray: the grid at z = 2 is beyond t = 1.
-    let mut rays: Vec<Ray> = (0..n).map(|i| Ray::with_t_max(Vec3::new(1.0 + i as f32 * 0.01, 1.0, 0.0), Vec3::Z, 1.0)).collect();
+    let mut rays: Vec<Ray> = (0..n)
+        .map(|i| Ray::with_t_max(Vec3::new(1.0 + i as f32 * 0.01, 1.0, 0.0), Vec3::Z, 1.0))
+        .collect();
     bvh.intersect_bundle(&mut rays);
     assert!(rays.iter().all(|r| r.hit.t == 1.0));
     let mut occluded = vec![true; n];
@@ -1063,7 +1162,10 @@ fn bvh4_partial_triangle_panics() {
 #[test]
 #[should_panic(expected = "out of range")]
 fn bvh8_bad_index_panics() {
-    Bvh8Cpu::new().build(Geometry::indexed(vec![Vec4::ZERO, Vec4::ONE, Vec4::X], vec![0, 1, 3]));
+    Bvh8Cpu::new().build(Geometry::indexed(
+        vec![Vec4::ZERO, Vec4::ONE, Vec4::X],
+        vec![0, 1, 3],
+    ));
 }
 
 #[test]

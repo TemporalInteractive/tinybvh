@@ -297,19 +297,24 @@ opaque!(
 // Callbacks
 // ---------------------------------------------------------------------------------------------
 
-pub type tbvh_aabb_fn =
-    Option<unsafe extern "C" fn(prim: u32, bmin: *mut tbvh_vec3, bmax: *mut tbvh_vec3, user: *mut c_void)>;
-pub type tbvh_intersect_fn = Option<unsafe extern "C" fn(ray: *mut tbvh_ray, prim: u32, user: *mut c_void) -> bool>;
-pub type tbvh_occluded_fn = Option<unsafe extern "C" fn(ray: *const tbvh_ray, prim: u32, user: *mut c_void) -> bool>;
+pub type tbvh_aabb_fn = Option<
+    unsafe extern "C" fn(prim: u32, bmin: *mut tbvh_vec3, bmax: *mut tbvh_vec3, user: *mut c_void),
+>;
+pub type tbvh_intersect_fn =
+    Option<unsafe extern "C" fn(ray: *mut tbvh_ray, prim: u32, user: *mut c_void) -> bool>;
+pub type tbvh_occluded_fn =
+    Option<unsafe extern "C" fn(ray: *const tbvh_ray, prim: u32, user: *mut c_void) -> bool>;
 
-pub type tbvh_aabb_ex_fn =
-    Option<unsafe extern "C" fn(prim: u64, bmin: *mut tbvh_dbl3, bmax: *mut tbvh_dbl3, user: *mut c_void)>;
+pub type tbvh_aabb_ex_fn = Option<
+    unsafe extern "C" fn(prim: u64, bmin: *mut tbvh_dbl3, bmax: *mut tbvh_dbl3, user: *mut c_void),
+>;
 pub type tbvh_intersect_ex_fn =
     Option<unsafe extern "C" fn(ray: *mut tbvh_ray_ex, prim: u64, user: *mut c_void) -> bool>;
 pub type tbvh_occluded_ex_fn =
     Option<unsafe extern "C" fn(ray: *const tbvh_ray_ex, prim: u64, user: *mut c_void) -> bool>;
 
-pub type tbvh_fatal_error_fn = Option<unsafe extern "C" fn(message: *const c_char, user: *mut c_void)>;
+pub type tbvh_fatal_error_fn =
+    Option<unsafe extern "C" fn(message: *const c_char, user: *mut c_void)>;
 
 // ---------------------------------------------------------------------------------------------
 // Functions
@@ -331,10 +336,22 @@ extern "C" {
     pub fn tbvh_shutdown_builtin_pool();
 
     // Ray helpers
-    pub fn tbvh_ray_init(ray: *mut tbvh_ray, origin: tbvh_vec3, direction: tbvh_vec3, t: f32, mask: u32);
+    pub fn tbvh_ray_init(
+        ray: *mut tbvh_ray,
+        origin: tbvh_vec3,
+        direction: tbvh_vec3,
+        t: f32,
+        mask: u32,
+    );
     pub fn tbvh_ray_set_direction(ray: *mut tbvh_ray, direction: tbvh_vec3);
     pub fn tbvh_ray_normalize(ray: *mut tbvh_ray);
-    pub fn tbvh_ray_ex_init(ray: *mut tbvh_ray_ex, origin: tbvh_dbl3, direction: tbvh_dbl3, t: f64, mask: u32);
+    pub fn tbvh_ray_ex_init(
+        ray: *mut tbvh_ray_ex,
+        origin: tbvh_dbl3,
+        direction: tbvh_dbl3,
+        t: f64,
+        mask: u32,
+    );
     pub fn tbvh_ray_ex_set_direction(ray: *mut tbvh_ray_ex, direction: tbvh_dbl3);
     pub fn tbvh_ray_ex_normalize(ray: *mut tbvh_ray_ex);
 
@@ -344,7 +361,10 @@ extern "C" {
     pub fn tbvh_blas_instance_update(inst: *mut tbvh_blas_instance, blas: *const tbvh_base);
     pub fn tbvh_blas_instance_ex_init(inst: *mut tbvh_blas_instance_ex, blas_idx: u64);
     pub fn tbvh_blas_instance_ex_invert_transform(inst: *mut tbvh_blas_instance_ex);
-    pub fn tbvh_blas_instance_ex_update(inst: *mut tbvh_blas_instance_ex, blas: *const tbvh_base_ex);
+    pub fn tbvh_blas_instance_ex_update(
+        inst: *mut tbvh_blas_instance_ex,
+        blas: *const tbvh_base_ex,
+    );
     pub fn tbvh_transform_point(p: tbvh_vec3, m: *const tbvh_mat4) -> tbvh_vec3;
     pub fn tbvh_transform_vector(v: tbvh_vec3, m: *const tbvh_mat4) -> tbvh_vec3;
 
@@ -411,7 +431,12 @@ extern "C" {
     pub fn tbvh_bvh_free(bvh: *mut tbvh_bvh);
     pub fn tbvh_bvh_base(bvh: *mut tbvh_bvh) -> *mut tbvh_base;
     pub fn tbvh_bvh_base_const(bvh: *const tbvh_bvh) -> *const tbvh_base;
-    pub fn tbvh_bvh_build(bvh: *mut tbvh_bvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh_build(
+        bvh: *mut tbvh_bvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh_build_indexed(
         bvh: *mut tbvh_bvh,
         verts: *const tbvh_vec4,
@@ -420,8 +445,18 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh_build_quick(bvh: *mut tbvh_bvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
-    pub fn tbvh_bvh_build_hq(bvh: *mut tbvh_bvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh_build_quick(
+        bvh: *mut tbvh_bvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
+    pub fn tbvh_bvh_build_hq(
+        bvh: *mut tbvh_bvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh_build_hq_indexed(
         bvh: *mut tbvh_bvh,
         verts: *const tbvh_vec4,
@@ -430,7 +465,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh_build_simd(bvh: *mut tbvh_bvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh_build_simd(
+        bvh: *mut tbvh_bvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh_build_simd_indexed(
         bvh: *mut tbvh_bvh,
         verts: *const tbvh_vec4,
@@ -440,7 +480,12 @@ extern "C" {
         prim_count: u32,
     );
     pub fn tbvh_bvh_build_aabbs(bvh: *mut tbvh_bvh, aabbs: *const tbvh_vec4, aabb_count: u32);
-    pub fn tbvh_bvh_build_custom(bvh: *mut tbvh_bvh, get_aabb: tbvh_aabb_fn, prim_count: u32, user: *mut c_void);
+    pub fn tbvh_bvh_build_custom(
+        bvh: *mut tbvh_bvh,
+        get_aabb: tbvh_aabb_fn,
+        prim_count: u32,
+        user: *mut c_void,
+    );
     pub fn tbvh_bvh_set_custom_callbacks(
         bvh: *mut tbvh_bvh,
         intersect: tbvh_intersect_fn,
@@ -458,7 +503,11 @@ extern "C" {
     pub fn tbvh_bvh_is_occluded(bvh: *const tbvh_bvh, ray: *const tbvh_ray) -> bool;
     pub fn tbvh_bvh_intersect_sphere(bvh: *const tbvh_bvh, pos: tbvh_vec3, r: f32) -> bool;
     pub fn tbvh_bvh_intersect_bundle(bvh: *const tbvh_bvh, rays: *mut tbvh_ray) -> i32;
-    pub fn tbvh_bvh_is_occluded_bundle(bvh: *const tbvh_bvh, rays: *mut tbvh_ray, occluded: *mut bool) -> i32;
+    pub fn tbvh_bvh_is_occluded_bundle(
+        bvh: *const tbvh_bvh,
+        rays: *mut tbvh_ray,
+        occluded: *mut bool,
+    ) -> i32;
     pub fn tbvh_bvh_refit(bvh: *mut tbvh_bvh, node_idx: u32);
     pub fn tbvh_bvh_compact(bvh: *mut tbvh_bvh);
     pub fn tbvh_bvh_optimize(bvh: *mut tbvh_bvh, iterations: u32, extreme: bool, stochastic: bool);
@@ -469,7 +518,8 @@ extern "C" {
     pub fn tbvh_bvh_node_count(bvh: *const tbvh_bvh) -> u32;
     pub fn tbvh_bvh_leaf_count(bvh: *const tbvh_bvh) -> u32;
     pub fn tbvh_bvh_prim_count(bvh: *const tbvh_bvh, node_idx: u32) -> u32;
-    pub fn tbvh_bvh_collect_nodes(bvh: *const tbvh_bvh, root: u32, list: *mut u32, cap: u32) -> u32;
+    pub fn tbvh_bvh_collect_nodes(bvh: *const tbvh_bvh, root: u32, list: *mut u32, cap: u32)
+        -> u32;
     pub fn tbvh_bvh_is_tlas(bvh: *const tbvh_bvh) -> bool;
     pub fn tbvh_bvh_is_indexed(bvh: *const tbvh_bvh) -> bool;
     pub fn tbvh_bvh_has_custom_geometry(bvh: *const tbvh_bvh) -> bool;
@@ -489,16 +539,28 @@ extern "C" {
     pub fn tbvh_bvh_free_geometry(bvh: *mut tbvh_bvh);
     pub fn tbvh_bvh_nodes(bvh: *const tbvh_bvh, count: *mut u32) -> *const tbvh_bvh_node;
     pub fn tbvh_bvh_prim_indices(bvh: *const tbvh_bvh, count: *mut u32) -> *const u32;
-    pub fn tbvh_bvh_verts(bvh: *const tbvh_bvh, count: *mut u32, stride: *mut u32) -> *const tbvh_vec4;
+    pub fn tbvh_bvh_verts(
+        bvh: *const tbvh_bvh,
+        count: *mut u32,
+        stride: *mut u32,
+    ) -> *const tbvh_vec4;
     pub fn tbvh_bvh_vert_indices(bvh: *const tbvh_bvh) -> *const u32;
-    pub fn tbvh_bvh_convert_from_verbose(bvh: *mut tbvh_bvh, verbose: *const tbvh_bvh_verbose, compact: bool);
+    pub fn tbvh_bvh_convert_from_verbose(
+        bvh: *mut tbvh_bvh,
+        verbose: *const tbvh_bvh_verbose,
+        compact: bool,
+    );
 
     // tbvh_bvh_verbose
     pub fn tbvh_bvh_verbose_new() -> *mut tbvh_bvh_verbose;
     pub fn tbvh_bvh_verbose_free(v: *mut tbvh_bvh_verbose);
     pub fn tbvh_bvh_verbose_base(v: *mut tbvh_bvh_verbose) -> *mut tbvh_base;
     pub fn tbvh_bvh_verbose_base_const(v: *const tbvh_bvh_verbose) -> *const tbvh_base;
-    pub fn tbvh_bvh_verbose_convert_from(v: *mut tbvh_bvh_verbose, bvh: *const tbvh_bvh, compact: bool);
+    pub fn tbvh_bvh_verbose_convert_from(
+        v: *mut tbvh_bvh_verbose,
+        bvh: *const tbvh_bvh,
+        compact: bool,
+    );
     pub fn tbvh_bvh_verbose_sah_cost(v: *const tbvh_bvh_verbose, node_idx: u32) -> f32;
     pub fn tbvh_bvh_verbose_node_count(v: *const tbvh_bvh_verbose) -> i32;
     pub fn tbvh_bvh_verbose_refit(v: *mut tbvh_bvh_verbose, node_idx: u32, skip_leafs: bool);
@@ -506,16 +568,30 @@ extern "C" {
     pub fn tbvh_bvh_verbose_sort_indices(v: *mut tbvh_bvh_verbose);
     pub fn tbvh_bvh_verbose_split_leafs(v: *mut tbvh_bvh_verbose, max_prims: u32);
     pub fn tbvh_bvh_verbose_merge_leafs(v: *mut tbvh_bvh_verbose);
-    pub fn tbvh_bvh_verbose_optimize(v: *mut tbvh_bvh_verbose, iterations: u32, extreme: bool, stochastic: bool);
-    pub fn tbvh_bvh_verbose_nodes(v: *const tbvh_bvh_verbose, count: *mut u32) -> *const tbvh_bvh_verbose_node;
-    pub fn tbvh_bvh_verbose_prim_indices(v: *const tbvh_bvh_verbose, count: *mut u32) -> *const u32;
+    pub fn tbvh_bvh_verbose_optimize(
+        v: *mut tbvh_bvh_verbose,
+        iterations: u32,
+        extreme: bool,
+        stochastic: bool,
+    );
+    pub fn tbvh_bvh_verbose_nodes(
+        v: *const tbvh_bvh_verbose,
+        count: *mut u32,
+    ) -> *const tbvh_bvh_verbose_node;
+    pub fn tbvh_bvh_verbose_prim_indices(v: *const tbvh_bvh_verbose, count: *mut u32)
+        -> *const u32;
 
     // tbvh_bvh_gpu
     pub fn tbvh_bvh_gpu_new() -> *mut tbvh_bvh_gpu;
     pub fn tbvh_bvh_gpu_free(g: *mut tbvh_bvh_gpu);
     pub fn tbvh_bvh_gpu_base(g: *mut tbvh_bvh_gpu) -> *mut tbvh_base;
     pub fn tbvh_bvh_gpu_base_const(g: *const tbvh_bvh_gpu) -> *const tbvh_base;
-    pub fn tbvh_bvh_gpu_build(g: *mut tbvh_bvh_gpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh_gpu_build(
+        g: *mut tbvh_bvh_gpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh_gpu_build_indexed(
         g: *mut tbvh_bvh_gpu,
         verts: *const tbvh_vec4,
@@ -524,7 +600,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh_gpu_build_hq(g: *mut tbvh_bvh_gpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh_gpu_build_hq(
+        g: *mut tbvh_bvh_gpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh_gpu_build_hq_indexed(
         g: *mut tbvh_bvh_gpu,
         verts: *const tbvh_vec4,
@@ -555,7 +636,12 @@ extern "C" {
     pub fn tbvh_mbvh4_free(m: *mut tbvh_mbvh4);
     pub fn tbvh_mbvh4_base(m: *mut tbvh_mbvh4) -> *mut tbvh_base;
     pub fn tbvh_mbvh4_base_const(m: *const tbvh_mbvh4) -> *const tbvh_base;
-    pub fn tbvh_mbvh4_build(m: *mut tbvh_mbvh4, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_mbvh4_build(
+        m: *mut tbvh_mbvh4,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_mbvh4_build_indexed(
         m: *mut tbvh_mbvh4,
         verts: *const tbvh_vec4,
@@ -564,7 +650,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_mbvh4_build_hq(m: *mut tbvh_mbvh4, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_mbvh4_build_hq(
+        m: *mut tbvh_mbvh4,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_mbvh4_build_hq_indexed(
         m: *mut tbvh_mbvh4,
         verts: *const tbvh_vec4,
@@ -587,7 +678,12 @@ extern "C" {
     pub fn tbvh_mbvh8_free(m: *mut tbvh_mbvh8);
     pub fn tbvh_mbvh8_base(m: *mut tbvh_mbvh8) -> *mut tbvh_base;
     pub fn tbvh_mbvh8_base_const(m: *const tbvh_mbvh8) -> *const tbvh_base;
-    pub fn tbvh_mbvh8_build(m: *mut tbvh_mbvh8, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_mbvh8_build(
+        m: *mut tbvh_mbvh8,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_mbvh8_build_indexed(
         m: *mut tbvh_mbvh8,
         verts: *const tbvh_vec4,
@@ -596,7 +692,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_mbvh8_build_hq(m: *mut tbvh_mbvh8, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_mbvh8_build_hq(
+        m: *mut tbvh_mbvh8,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_mbvh8_build_hq_indexed(
         m: *mut tbvh_mbvh8,
         verts: *const tbvh_vec4,
@@ -619,7 +720,12 @@ extern "C" {
     pub fn tbvh_bvh4_cpu_free(b: *mut tbvh_bvh4_cpu);
     pub fn tbvh_bvh4_cpu_base(b: *mut tbvh_bvh4_cpu) -> *mut tbvh_base;
     pub fn tbvh_bvh4_cpu_base_const(b: *const tbvh_bvh4_cpu) -> *const tbvh_base;
-    pub fn tbvh_bvh4_cpu_build(b: *mut tbvh_bvh4_cpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_cpu_build(
+        b: *mut tbvh_bvh4_cpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_cpu_build_indexed(
         b: *mut tbvh_bvh4_cpu,
         verts: *const tbvh_vec4,
@@ -628,7 +734,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh4_cpu_build_hq(b: *mut tbvh_bvh4_cpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_cpu_build_hq(
+        b: *mut tbvh_bvh4_cpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_cpu_build_hq_indexed(
         b: *mut tbvh_bvh4_cpu,
         verts: *const tbvh_vec4,
@@ -637,16 +748,28 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh4_cpu_convert_from(b: *mut tbvh_bvh4_cpu, m: *mut tbvh_mbvh4, leaves_merged: bool);
+    pub fn tbvh_bvh4_cpu_convert_from(
+        b: *mut tbvh_bvh4_cpu,
+        m: *mut tbvh_mbvh4,
+        leaves_merged: bool,
+    );
     pub fn tbvh_bvh4_cpu_optimize(b: *mut tbvh_bvh4_cpu, iterations: u32, extreme: bool);
     pub fn tbvh_bvh4_cpu_refit(b: *mut tbvh_bvh4_cpu);
     pub fn tbvh_bvh4_cpu_sah_cost(b: *const tbvh_bvh4_cpu, node_idx: u32) -> f32;
     pub fn tbvh_bvh4_cpu_intersect(b: *const tbvh_bvh4_cpu, ray: *mut tbvh_ray) -> i32;
     pub fn tbvh_bvh4_cpu_is_occluded(b: *const tbvh_bvh4_cpu, ray: *const tbvh_ray) -> bool;
     pub fn tbvh_bvh4_cpu_intersect_bundle(b: *const tbvh_bvh4_cpu, rays: *mut tbvh_ray) -> i32;
-    pub fn tbvh_bvh4_cpu_is_occluded_bundle(b: *const tbvh_bvh4_cpu, rays: *mut tbvh_ray, occluded: *mut bool) -> i32;
+    pub fn tbvh_bvh4_cpu_is_occluded_bundle(
+        b: *const tbvh_bvh4_cpu,
+        rays: *mut tbvh_ray,
+        occluded: *mut bool,
+    ) -> i32;
     pub fn tbvh_bvh4_cpu_save(b: *const tbvh_bvh4_cpu, path: *const c_char);
-    pub fn tbvh_bvh4_cpu_load(b: *mut tbvh_bvh4_cpu, path: *const c_char, expected_tris: u32) -> bool;
+    pub fn tbvh_bvh4_cpu_load(
+        b: *mut tbvh_bvh4_cpu,
+        path: *const c_char,
+        expected_tris: u32,
+    ) -> bool;
     pub fn tbvh_bvh4_cpu_load_self_contained(b: *mut tbvh_bvh4_cpu, path: *const c_char) -> bool;
     pub fn tbvh_bvh4_cpu_data(b: *const tbvh_bvh4_cpu, used_blocks: *mut u32) -> *const u8;
 
@@ -655,7 +778,12 @@ extern "C" {
     pub fn tbvh_bvh8_cpu_free(b: *mut tbvh_bvh8_cpu);
     pub fn tbvh_bvh8_cpu_base(b: *mut tbvh_bvh8_cpu) -> *mut tbvh_base;
     pub fn tbvh_bvh8_cpu_base_const(b: *const tbvh_bvh8_cpu) -> *const tbvh_base;
-    pub fn tbvh_bvh8_cpu_build(b: *mut tbvh_bvh8_cpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh8_cpu_build(
+        b: *mut tbvh_bvh8_cpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh8_cpu_build_indexed(
         b: *mut tbvh_bvh8_cpu,
         verts: *const tbvh_vec4,
@@ -664,7 +792,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh8_cpu_build_hq(b: *mut tbvh_bvh8_cpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh8_cpu_build_hq(
+        b: *mut tbvh_bvh8_cpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh8_cpu_build_hq_indexed(
         b: *mut tbvh_bvh8_cpu,
         verts: *const tbvh_vec4,
@@ -673,14 +806,22 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh8_cpu_convert_from(b: *mut tbvh_bvh8_cpu, m: *mut tbvh_mbvh8, leaves_merged: bool);
+    pub fn tbvh_bvh8_cpu_convert_from(
+        b: *mut tbvh_bvh8_cpu,
+        m: *mut tbvh_mbvh8,
+        leaves_merged: bool,
+    );
     pub fn tbvh_bvh8_cpu_optimize(b: *mut tbvh_bvh8_cpu, iterations: u32, extreme: bool);
     pub fn tbvh_bvh8_cpu_refit(b: *mut tbvh_bvh8_cpu);
     pub fn tbvh_bvh8_cpu_sah_cost(b: *const tbvh_bvh8_cpu, node_idx: u32) -> f32;
     pub fn tbvh_bvh8_cpu_intersect(b: *const tbvh_bvh8_cpu, ray: *mut tbvh_ray) -> i32;
     pub fn tbvh_bvh8_cpu_is_occluded(b: *const tbvh_bvh8_cpu, ray: *const tbvh_ray) -> bool;
     pub fn tbvh_bvh8_cpu_save(b: *const tbvh_bvh8_cpu, path: *const c_char);
-    pub fn tbvh_bvh8_cpu_load(b: *mut tbvh_bvh8_cpu, path: *const c_char, expected_tris: u32) -> bool;
+    pub fn tbvh_bvh8_cpu_load(
+        b: *mut tbvh_bvh8_cpu,
+        path: *const c_char,
+        expected_tris: u32,
+    ) -> bool;
     pub fn tbvh_bvh8_cpu_load_self_contained(b: *mut tbvh_bvh8_cpu, path: *const c_char) -> bool;
     pub fn tbvh_bvh8_cpu_data(b: *const tbvh_bvh8_cpu, used_blocks: *mut u32) -> *const u8;
 
@@ -689,7 +830,12 @@ extern "C" {
     pub fn tbvh_bvh4_gpu_free(b: *mut tbvh_bvh4_gpu);
     pub fn tbvh_bvh4_gpu_base(b: *mut tbvh_bvh4_gpu) -> *mut tbvh_base;
     pub fn tbvh_bvh4_gpu_base_const(b: *const tbvh_bvh4_gpu) -> *const tbvh_base;
-    pub fn tbvh_bvh4_gpu_build(b: *mut tbvh_bvh4_gpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_gpu_build(
+        b: *mut tbvh_bvh4_gpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_gpu_build_indexed(
         b: *mut tbvh_bvh4_gpu,
         verts: *const tbvh_vec4,
@@ -698,7 +844,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh4_gpu_build_hq(b: *mut tbvh_bvh4_gpu, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_gpu_build_hq(
+        b: *mut tbvh_bvh4_gpu,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_gpu_build_hq_indexed(
         b: *mut tbvh_bvh4_gpu,
         verts: *const tbvh_vec4,
@@ -720,7 +871,12 @@ extern "C" {
     pub fn tbvh_bvh4_amd_hw_free(b: *mut tbvh_bvh4_amd_hw);
     pub fn tbvh_bvh4_amd_hw_base(b: *mut tbvh_bvh4_amd_hw) -> *mut tbvh_base;
     pub fn tbvh_bvh4_amd_hw_base_const(b: *const tbvh_bvh4_amd_hw) -> *const tbvh_base;
-    pub fn tbvh_bvh4_amd_hw_build(b: *mut tbvh_bvh4_amd_hw, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_amd_hw_build(
+        b: *mut tbvh_bvh4_amd_hw,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_amd_hw_build_indexed(
         b: *mut tbvh_bvh4_amd_hw,
         verts: *const tbvh_vec4,
@@ -729,7 +885,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh4_amd_hw_build_hq(b: *mut tbvh_bvh4_amd_hw, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh4_amd_hw_build_hq(
+        b: *mut tbvh_bvh4_amd_hw,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh4_amd_hw_build_hq_indexed(
         b: *mut tbvh_bvh4_amd_hw,
         verts: *const tbvh_vec4,
@@ -741,15 +902,26 @@ extern "C" {
     pub fn tbvh_bvh4_amd_hw_convert_from(b: *mut tbvh_bvh4_amd_hw, m: *const tbvh_mbvh4);
     pub fn tbvh_bvh4_amd_hw_optimize(b: *mut tbvh_bvh4_amd_hw, iterations: u32, extreme: bool);
     pub fn tbvh_bvh4_amd_hw_sah_cost(b: *const tbvh_bvh4_amd_hw, node_idx: u32) -> f32;
-    pub fn tbvh_bvh4_amd_hw_load_self_contained(b: *mut tbvh_bvh4_amd_hw, path: *const c_char) -> bool;
-    pub fn tbvh_bvh4_amd_hw_data(b: *const tbvh_bvh4_amd_hw, used_blocks: *mut u32) -> *const tbvh_vec4;
+    pub fn tbvh_bvh4_amd_hw_load_self_contained(
+        b: *mut tbvh_bvh4_amd_hw,
+        path: *const c_char,
+    ) -> bool;
+    pub fn tbvh_bvh4_amd_hw_data(
+        b: *const tbvh_bvh4_amd_hw,
+        used_blocks: *mut u32,
+    ) -> *const tbvh_vec4;
 
     // tbvh_bvh8_cwbvh
     pub fn tbvh_bvh8_cwbvh_new() -> *mut tbvh_bvh8_cwbvh;
     pub fn tbvh_bvh8_cwbvh_free(b: *mut tbvh_bvh8_cwbvh);
     pub fn tbvh_bvh8_cwbvh_base(b: *mut tbvh_bvh8_cwbvh) -> *mut tbvh_base;
     pub fn tbvh_bvh8_cwbvh_base_const(b: *const tbvh_bvh8_cwbvh) -> *const tbvh_base;
-    pub fn tbvh_bvh8_cwbvh_build(b: *mut tbvh_bvh8_cwbvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh8_cwbvh_build(
+        b: *mut tbvh_bvh8_cwbvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh8_cwbvh_build_indexed(
         b: *mut tbvh_bvh8_cwbvh,
         verts: *const tbvh_vec4,
@@ -758,7 +930,12 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh8_cwbvh_build_hq(b: *mut tbvh_bvh8_cwbvh, verts: *const tbvh_vec4, vert_count: u32, stride: u32);
+    pub fn tbvh_bvh8_cwbvh_build_hq(
+        b: *mut tbvh_bvh8_cwbvh,
+        verts: *const tbvh_vec4,
+        vert_count: u32,
+        stride: u32,
+    );
     pub fn tbvh_bvh8_cwbvh_build_hq_indexed(
         b: *mut tbvh_bvh8_cwbvh,
         verts: *const tbvh_vec4,
@@ -767,16 +944,33 @@ extern "C" {
         indices: *const u32,
         prim_count: u32,
     );
-    pub fn tbvh_bvh8_cwbvh_convert_from(b: *mut tbvh_bvh8_cwbvh, m: *const tbvh_mbvh8, compact: bool);
+    pub fn tbvh_bvh8_cwbvh_convert_from(
+        b: *mut tbvh_bvh8_cwbvh,
+        m: *const tbvh_mbvh8,
+        compact: bool,
+    );
     pub fn tbvh_bvh8_cwbvh_optimize(b: *mut tbvh_bvh8_cwbvh, iterations: u32, extreme: bool);
     pub fn tbvh_bvh8_cwbvh_sah_cost(b: *const tbvh_bvh8_cwbvh, node_idx: u32) -> f32;
     pub fn tbvh_bvh8_cwbvh_intersect(b: *const tbvh_bvh8_cwbvh, ray: *mut tbvh_ray) -> i32;
     pub fn tbvh_bvh8_cwbvh_is_occluded(b: *const tbvh_bvh8_cwbvh, ray: *const tbvh_ray) -> bool;
     pub fn tbvh_bvh8_cwbvh_save(b: *const tbvh_bvh8_cwbvh, path: *const c_char);
-    pub fn tbvh_bvh8_cwbvh_load(b: *mut tbvh_bvh8_cwbvh, path: *const c_char, expected_tris: u32) -> bool;
-    pub fn tbvh_bvh8_cwbvh_load_self_contained(b: *mut tbvh_bvh8_cwbvh, path: *const c_char) -> bool;
-    pub fn tbvh_bvh8_cwbvh_nodes(b: *const tbvh_bvh8_cwbvh, used_blocks: *mut u32) -> *const tbvh_vec4;
-    pub fn tbvh_bvh8_cwbvh_tris(b: *const tbvh_bvh8_cwbvh, used_blocks: *mut u32) -> *const tbvh_vec4;
+    pub fn tbvh_bvh8_cwbvh_load(
+        b: *mut tbvh_bvh8_cwbvh,
+        path: *const c_char,
+        expected_tris: u32,
+    ) -> bool;
+    pub fn tbvh_bvh8_cwbvh_load_self_contained(
+        b: *mut tbvh_bvh8_cwbvh,
+        path: *const c_char,
+    ) -> bool;
+    pub fn tbvh_bvh8_cwbvh_nodes(
+        b: *const tbvh_bvh8_cwbvh,
+        used_blocks: *mut u32,
+    ) -> *const tbvh_vec4;
+    pub fn tbvh_bvh8_cwbvh_tris(
+        b: *const tbvh_bvh8_cwbvh,
+        used_blocks: *mut u32,
+    ) -> *const tbvh_vec4;
 
     // tbvh_voxelset
     pub fn tbvh_voxelset_new() -> *mut tbvh_voxelset;
@@ -794,7 +988,12 @@ extern "C" {
     pub fn tbvh_bvh_double_free(b: *mut tbvh_bvh_double);
     pub fn tbvh_bvh_double_base(b: *mut tbvh_bvh_double) -> *mut tbvh_base_ex;
     pub fn tbvh_bvh_double_base_const(b: *const tbvh_bvh_double) -> *const tbvh_base_ex;
-    pub fn tbvh_bvh_double_build(b: *mut tbvh_bvh_double, verts: *const tbvh_dbl3, vert_count: u64, stride: u64);
+    pub fn tbvh_bvh_double_build(
+        b: *mut tbvh_bvh_double,
+        verts: *const tbvh_dbl3,
+        vert_count: u64,
+        stride: u64,
+    );
     pub fn tbvh_bvh_double_build_indexed(
         b: *mut tbvh_bvh_double,
         verts: *const tbvh_dbl3,
@@ -803,8 +1002,18 @@ extern "C" {
         indices: *const u64,
         prim_count: u64,
     );
-    pub fn tbvh_bvh_double_build_quick(b: *mut tbvh_bvh_double, verts: *const tbvh_dbl3, vert_count: u64, stride: u64);
-    pub fn tbvh_bvh_double_build_hq(b: *mut tbvh_bvh_double, verts: *const tbvh_dbl3, vert_count: u64, stride: u64);
+    pub fn tbvh_bvh_double_build_quick(
+        b: *mut tbvh_bvh_double,
+        verts: *const tbvh_dbl3,
+        vert_count: u64,
+        stride: u64,
+    );
+    pub fn tbvh_bvh_double_build_hq(
+        b: *mut tbvh_bvh_double,
+        verts: *const tbvh_dbl3,
+        vert_count: u64,
+        stride: u64,
+    );
     pub fn tbvh_bvh_double_build_hq_indexed(
         b: *mut tbvh_bvh_double,
         verts: *const tbvh_dbl3,
@@ -813,7 +1022,11 @@ extern "C" {
         indices: *const u64,
         prim_count: u64,
     );
-    pub fn tbvh_bvh_double_build_aabbs(b: *mut tbvh_bvh_double, aabbs: *const tbvh_dbl3, aabb_count: u64);
+    pub fn tbvh_bvh_double_build_aabbs(
+        b: *mut tbvh_bvh_double,
+        aabbs: *const tbvh_dbl3,
+        aabb_count: u64,
+    );
     pub fn tbvh_bvh_double_build_custom(
         b: *mut tbvh_bvh_double,
         get_aabb: tbvh_aabb_ex_fn,
@@ -835,10 +1048,19 @@ extern "C" {
     );
     pub fn tbvh_bvh_double_intersect(b: *const tbvh_bvh_double, ray: *mut tbvh_ray_ex) -> i32;
     pub fn tbvh_bvh_double_is_occluded(b: *const tbvh_bvh_double, ray: *const tbvh_ray_ex) -> bool;
-    pub fn tbvh_bvh_double_intersect_sphere(b: *const tbvh_bvh_double, pos: tbvh_dbl3, r: f64) -> bool;
+    pub fn tbvh_bvh_double_intersect_sphere(
+        b: *const tbvh_bvh_double,
+        pos: tbvh_dbl3,
+        r: f64,
+    ) -> bool;
     pub fn tbvh_bvh_double_refit(b: *mut tbvh_bvh_double, node_idx: u64);
     pub fn tbvh_bvh_double_compact(b: *mut tbvh_bvh_double);
-    pub fn tbvh_bvh_double_optimize(b: *mut tbvh_bvh_double, iterations: u32, extreme: bool, stochastic: bool);
+    pub fn tbvh_bvh_double_optimize(
+        b: *mut tbvh_bvh_double,
+        iterations: u32,
+        extreme: bool,
+        stochastic: bool,
+    );
     pub fn tbvh_bvh_double_split_leafs(b: *mut tbvh_bvh_double, max_prims: u64);
     pub fn tbvh_bvh_double_merge_leafs(b: *mut tbvh_bvh_double);
     pub fn tbvh_bvh_double_sah_cost(b: *const tbvh_bvh_double, node_idx: u64) -> f64;
@@ -849,7 +1071,11 @@ extern "C" {
     pub fn tbvh_bvh_double_is_tlas(b: *const tbvh_bvh_double) -> bool;
     pub fn tbvh_bvh_double_is_indexed(b: *const tbvh_bvh_double) -> bool;
     pub fn tbvh_bvh_double_has_custom_geometry(b: *const tbvh_bvh_double) -> bool;
-    pub fn tbvh_bvh_double_save(b: *const tbvh_bvh_double, path: *const c_char, include_geometry: bool);
+    pub fn tbvh_bvh_double_save(
+        b: *const tbvh_bvh_double,
+        path: *const c_char,
+        include_geometry: bool,
+    );
     pub fn tbvh_bvh_double_load(
         b: *mut tbvh_bvh_double,
         path: *const c_char,
@@ -859,13 +1085,23 @@ extern "C" {
         indices: *const u64,
         prim_count: u64,
     ) -> bool;
-    pub fn tbvh_bvh_double_load_self_contained(b: *mut tbvh_bvh_double, path: *const c_char) -> bool;
+    pub fn tbvh_bvh_double_load_self_contained(
+        b: *mut tbvh_bvh_double,
+        path: *const c_char,
+    ) -> bool;
     pub fn tbvh_bvh_double_owns_geometry(b: *const tbvh_bvh_double) -> bool;
     pub fn tbvh_bvh_double_has_fragments(b: *const tbvh_bvh_double) -> bool;
     pub fn tbvh_bvh_double_free_geometry(b: *mut tbvh_bvh_double);
-    pub fn tbvh_bvh_double_nodes(b: *const tbvh_bvh_double, count: *mut u64) -> *const tbvh_bvh_node_ex;
+    pub fn tbvh_bvh_double_nodes(
+        b: *const tbvh_bvh_double,
+        count: *mut u64,
+    ) -> *const tbvh_bvh_node_ex;
     pub fn tbvh_bvh_double_prim_indices(b: *const tbvh_bvh_double, count: *mut u64) -> *const u64;
-    pub fn tbvh_bvh_double_verts(b: *const tbvh_bvh_double, count: *mut u64, stride: *mut u64) -> *const tbvh_dbl3;
+    pub fn tbvh_bvh_double_verts(
+        b: *const tbvh_bvh_double,
+        count: *mut u64,
+        stride: *mut u64,
+    ) -> *const tbvh_dbl3;
     pub fn tbvh_bvh_double_vert_indices(b: *const tbvh_bvh_double) -> *const u64;
 
     // tbvh_bvh4_double
@@ -873,7 +1109,12 @@ extern "C" {
     pub fn tbvh_bvh4_double_free(b: *mut tbvh_bvh4_double);
     pub fn tbvh_bvh4_double_base(b: *mut tbvh_bvh4_double) -> *mut tbvh_base_ex;
     pub fn tbvh_bvh4_double_base_const(b: *const tbvh_bvh4_double) -> *const tbvh_base_ex;
-    pub fn tbvh_bvh4_double_build(b: *mut tbvh_bvh4_double, verts: *const tbvh_dbl3, vert_count: u64, stride: u64);
+    pub fn tbvh_bvh4_double_build(
+        b: *mut tbvh_bvh4_double,
+        verts: *const tbvh_dbl3,
+        vert_count: u64,
+        stride: u64,
+    );
     pub fn tbvh_bvh4_double_build_indexed(
         b: *mut tbvh_bvh4_double,
         verts: *const tbvh_dbl3,
@@ -882,7 +1123,12 @@ extern "C" {
         indices: *const u64,
         prim_count: u64,
     );
-    pub fn tbvh_bvh4_double_build_hq(b: *mut tbvh_bvh4_double, verts: *const tbvh_dbl3, vert_count: u64, stride: u64);
+    pub fn tbvh_bvh4_double_build_hq(
+        b: *mut tbvh_bvh4_double,
+        verts: *const tbvh_dbl3,
+        vert_count: u64,
+        stride: u64,
+    );
     pub fn tbvh_bvh4_double_build_hq_indexed(
         b: *mut tbvh_bvh4_double,
         verts: *const tbvh_dbl3,
@@ -895,10 +1141,20 @@ extern "C" {
     pub fn tbvh_bvh4_double_refit(b: *mut tbvh_bvh4_double);
     pub fn tbvh_bvh4_double_sah_cost(b: *const tbvh_bvh4_double, node_idx: u64) -> f64;
     pub fn tbvh_bvh4_double_intersect(b: *const tbvh_bvh4_double, ray: *mut tbvh_ray_ex) -> i32;
-    pub fn tbvh_bvh4_double_is_occluded(b: *const tbvh_bvh4_double, ray: *const tbvh_ray_ex) -> bool;
+    pub fn tbvh_bvh4_double_is_occluded(
+        b: *const tbvh_bvh4_double,
+        ray: *const tbvh_ray_ex,
+    ) -> bool;
     pub fn tbvh_bvh4_double_save(b: *const tbvh_bvh4_double, path: *const c_char);
-    pub fn tbvh_bvh4_double_load(b: *mut tbvh_bvh4_double, path: *const c_char, expected_tris: u64) -> bool;
-    pub fn tbvh_bvh4_double_load_self_contained(b: *mut tbvh_bvh4_double, path: *const c_char) -> bool;
+    pub fn tbvh_bvh4_double_load(
+        b: *mut tbvh_bvh4_double,
+        path: *const c_char,
+        expected_tris: u64,
+    ) -> bool;
+    pub fn tbvh_bvh4_double_load_self_contained(
+        b: *mut tbvh_bvh4_double,
+        path: *const c_char,
+    ) -> bool;
     pub fn tbvh_bvh4_double_data(b: *const tbvh_bvh4_double, used_blocks: *mut u32) -> *const u8;
 }
 

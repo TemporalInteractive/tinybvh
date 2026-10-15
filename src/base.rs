@@ -68,7 +68,9 @@ macro_rules! impl_base_accessors {
 
             /// Sets the number of bins for the high quality builders, clamped to `1..=128`.
             pub fn set_hq_bins(&mut self, bins: u32) {
-                unsafe { $crate::ffi::tbvh_base_set_hq_bins(self.base_ptr_mut(), bins.clamp(1, 128)) }
+                unsafe {
+                    $crate::ffi::tbvh_base_set_hq_bins(self.base_ptr_mut(), bins.clamp(1, 128))
+                }
             }
 
             /// Whether odd tree levels use one extra bin in the high quality builders.
@@ -96,8 +98,12 @@ macro_rules! impl_base_accessors {
             pub fn aabb(&self) -> (glam::Vec3, glam::Vec3) {
                 unsafe {
                     (
-                        $crate::geometry::vec3_from_ffi($crate::ffi::tbvh_base_aabb_min(self.base_ptr())),
-                        $crate::geometry::vec3_from_ffi($crate::ffi::tbvh_base_aabb_max(self.base_ptr())),
+                        $crate::geometry::vec3_from_ffi($crate::ffi::tbvh_base_aabb_min(
+                            self.base_ptr(),
+                        )),
+                        $crate::geometry::vec3_from_ffi($crate::ffi::tbvh_base_aabb_max(
+                            self.base_ptr(),
+                        )),
                     )
                 }
             }
@@ -174,7 +180,9 @@ macro_rules! impl_base_accessors_ex {
 
             /// The memory layout of this structure.
             pub fn layout(&self) -> $crate::Layout {
-                $crate::Layout::from_raw(unsafe { $crate::ffi::tbvh_base_ex_layout(self.base_ptr()) })
+                $crate::Layout::from_raw(unsafe {
+                    $crate::ffi::tbvh_base_ex_layout(self.base_ptr())
+                })
             }
 
             /// The build settings that the next build will use.
@@ -223,7 +231,9 @@ macro_rules! impl_base_accessors_ex {
 
             /// Sets the number of bins for the high quality builders, clamped to `1..=128`.
             pub fn set_hq_bins(&mut self, bins: u32) {
-                unsafe { $crate::ffi::tbvh_base_ex_set_hq_bins(self.base_ptr_mut(), bins.clamp(1, 128)) }
+                unsafe {
+                    $crate::ffi::tbvh_base_ex_set_hq_bins(self.base_ptr_mut(), bins.clamp(1, 128))
+                }
             }
 
             /// Whether odd tree levels use one extra bin in the high quality builders.
@@ -250,8 +260,12 @@ macro_rules! impl_base_accessors_ex {
             pub fn aabb(&self) -> (glam::DVec3, glam::DVec3) {
                 unsafe {
                     (
-                        $crate::geometry::dvec3_from_ffi($crate::ffi::tbvh_base_ex_aabb_min(self.base_ptr())),
-                        $crate::geometry::dvec3_from_ffi($crate::ffi::tbvh_base_ex_aabb_max(self.base_ptr())),
+                        $crate::geometry::dvec3_from_ffi($crate::ffi::tbvh_base_ex_aabb_min(
+                            self.base_ptr(),
+                        )),
+                        $crate::geometry::dvec3_from_ffi($crate::ffi::tbvh_base_ex_aabb_max(
+                            self.base_ptr(),
+                        )),
                     )
                 }
             }
@@ -320,13 +334,25 @@ macro_rules! impl_opacity_maps {
             pub fn set_opacity_micro_maps(&mut self, map: Vec<u32>, n: u32) {
                 $crate::geometry::validate_opacity_map(&map, n, self.prim_count() as u64);
                 self.opacity_map = Some(map);
-                let ptr = self.opacity_map.as_ref().map(|m| m.as_ptr()).unwrap_or(core::ptr::null());
-                unsafe { $crate::ffi::tbvh_base_set_opacity_micro_maps(self.base_ptr_mut(), ptr, n) };
+                let ptr = self
+                    .opacity_map
+                    .as_ref()
+                    .map(|m| m.as_ptr())
+                    .unwrap_or(core::ptr::null());
+                unsafe {
+                    $crate::ffi::tbvh_base_set_opacity_micro_maps(self.base_ptr_mut(), ptr, n)
+                };
             }
 
             /// Detaches the opacity micro map, if any.
             pub fn clear_opacity_micro_maps(&mut self) {
-                unsafe { $crate::ffi::tbvh_base_set_opacity_micro_maps(self.base_ptr_mut(), core::ptr::null(), 0) };
+                unsafe {
+                    $crate::ffi::tbvh_base_set_opacity_micro_maps(
+                        self.base_ptr_mut(),
+                        core::ptr::null(),
+                        0,
+                    )
+                };
                 self.opacity_map = None;
             }
 
@@ -337,4 +363,3 @@ macro_rules! impl_opacity_maps {
         }
     };
 }
-

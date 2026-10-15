@@ -71,7 +71,15 @@ impl Intersection {
     /// A record that has not recorded any hit, with `t` set to `t_max`.
     #[inline]
     pub fn none(t_max: f32) -> Self {
-        Intersection { inst: 0, t: t_max, u: 0.0, v: 0.0, prim: 0, aux_data: [0; ffi::PTR_SIZE], user: [0; 14] }
+        Intersection {
+            inst: 0,
+            t: t_max,
+            u: 0.0,
+            v: 0.0,
+            prim: 0,
+            aux_data: [0; ffi::PTR_SIZE],
+            user: [0; 14],
+        }
     }
 
     /// True when `t` is below [`FAR`], which is how tinybvh signals a hit for a ray that started
@@ -139,7 +147,11 @@ impl Ray {
             mask: MASK_ALL,
             direction,
             inst_idx: 0,
-            rcp_direction: Vec3::new(safe_rcp(direction.x), safe_rcp(direction.y), safe_rcp(direction.z)),
+            rcp_direction: Vec3::new(
+                safe_rcp(direction.x),
+                safe_rcp(direction.y),
+                safe_rcp(direction.z),
+            ),
             hit: Intersection::none(t_max),
         }
     }
@@ -167,7 +179,11 @@ impl Ray {
     #[inline]
     pub fn set_direction(&mut self, direction: Vec3) {
         self.direction = direction;
-        self.rcp_direction = Vec3::new(safe_rcp(direction.x), safe_rcp(direction.y), safe_rcp(direction.z));
+        self.rcp_direction = Vec3::new(
+            safe_rcp(direction.x),
+            safe_rcp(direction.y),
+            safe_rcp(direction.z),
+        );
     }
 
     /// Normalizes the direction (and updates the reciprocal), so that `hit.t` is a world distance.
@@ -209,7 +225,13 @@ impl Ray {
     /// error and terminates the process, which is far less debuggable than a panic.
     #[inline]
     pub(crate) fn assert_finite(&self) {
-        let probe = self.origin.x + self.origin.y + self.origin.z + self.direction.x + self.direction.y + self.direction.z + self.hit.t;
+        let probe = self.origin.x
+            + self.origin.y
+            + self.origin.z
+            + self.direction.x
+            + self.direction.y
+            + self.direction.z
+            + self.hit.t;
         assert!(!probe.is_nan(), "tinybvh: ray contains NaN components");
     }
 
@@ -254,7 +276,15 @@ impl IntersectionEx {
     /// A record without a hit, with `t` set to `t_max`.
     #[inline]
     pub fn none(t_max: f64) -> Self {
-        IntersectionEx { inst: 0, t: t_max, u: 0.0, v: 0.0, prim: 0, aux_data: [0; ffi::PTR_SIZE], user: [0; 14] }
+        IntersectionEx {
+            inst: 0,
+            t: t_max,
+            u: 0.0,
+            v: 0.0,
+            prim: 0,
+            aux_data: [0; ffi::PTR_SIZE],
+            user: [0; 14],
+        }
     }
 
     /// True when `t` is below [`DBL_FAR`]; see [`Intersection::is_hit`] for the caveat.
@@ -317,7 +347,11 @@ impl RayEx {
             _pad0: 0,
             direction,
             inst_idx: 0,
-            rcp_direction: DVec3::new(safe_rcp_d(direction.x), safe_rcp_d(direction.y), safe_rcp_d(direction.z)),
+            rcp_direction: DVec3::new(
+                safe_rcp_d(direction.x),
+                safe_rcp_d(direction.y),
+                safe_rcp_d(direction.z),
+            ),
             hit: IntersectionEx::none(t_max),
         }
     }
@@ -345,7 +379,11 @@ impl RayEx {
     #[inline]
     pub fn set_direction(&mut self, direction: DVec3) {
         self.direction = direction;
-        self.rcp_direction = DVec3::new(safe_rcp_d(direction.x), safe_rcp_d(direction.y), safe_rcp_d(direction.z));
+        self.rcp_direction = DVec3::new(
+            safe_rcp_d(direction.x),
+            safe_rcp_d(direction.y),
+            safe_rcp_d(direction.z),
+        );
     }
 
     /// Normalizes the direction.
@@ -385,7 +423,13 @@ impl RayEx {
     /// Panics when origin, direction or `hit.t` contain NaN; see [`Ray::assert_finite`].
     #[inline]
     pub(crate) fn assert_finite(&self) {
-        let probe = self.origin.x + self.origin.y + self.origin.z + self.direction.x + self.direction.y + self.direction.z + self.hit.t;
+        let probe = self.origin.x
+            + self.origin.y
+            + self.origin.z
+            + self.direction.x
+            + self.direction.y
+            + self.direction.z
+            + self.hit.t;
         assert!(!probe.is_nan(), "tinybvh: ray contains NaN components");
     }
 

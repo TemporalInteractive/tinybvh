@@ -8,8 +8,8 @@ use std::sync::Arc;
 use approx::assert_relative_eq;
 use glam::{DMat4, DVec3};
 use tinybvh::{
-    BlasEx, BlasInstanceEx, BuildSettings, Bvh4Double, BvhDouble, BvhNodeEx, CustomGeometryEx, Error, GeometryEx, Layout,
-    RayEx, DBL_FAR,
+    BlasEx, BlasInstanceEx, BuildSettings, Bvh4Double, BvhDouble, BvhNodeEx, CustomGeometryEx,
+    Error, GeometryEx, Layout, RayEx, DBL_FAR,
 };
 
 use common::{grid_indexed_d, grid_soup_d, Rng};
@@ -20,7 +20,11 @@ use common::{grid_indexed_d, grid_soup_d, Rng};
 
 /// A single triangle in the plane z = `z`, spanning roughly [-1, 1] in x and y.
 fn triangle_at(z: f64) -> [DVec3; 3] {
-    [DVec3::new(-1.0, -1.0, z), DVec3::new(1.0, -1.0, z), DVec3::new(0.0, 1.0, z)]
+    [
+        DVec3::new(-1.0, -1.0, z),
+        DVec3::new(1.0, -1.0, z),
+        DVec3::new(0.0, 1.0, z),
+    ]
 }
 
 fn two_triangles() -> Vec<DVec3> {
@@ -75,7 +79,12 @@ fn brute_force_hit(verts: &[DVec3], origin: DVec3, dir: DVec3) -> Option<(f64, u
 
 /// Compares a layout's closest-hit results against the brute force reference for `rays` random
 /// rays from outside the unit cube towards it.
-fn check_against_brute_force(verts: &[DVec3], rays: usize, seed: u64, mut intersect: impl FnMut(&mut RayEx)) {
+fn check_against_brute_force(
+    verts: &[DVec3],
+    rays: usize,
+    seed: u64,
+    mut intersect: impl FnMut(&mut RayEx),
+) {
     let mut rng = Rng::new(seed);
     let mut hits = 0;
     for _ in 0..rays {
@@ -85,15 +94,25 @@ fn check_against_brute_force(verts: &[DVec3], rays: usize, seed: u64, mut inters
         let mut ray = RayEx::new(origin, dir);
         intersect(&mut ray);
         match brute_force_hit(verts, origin, dir) {
-            None => assert!(!ray.hit.is_hit(), "layout found a hit where brute force found none"),
+            None => assert!(
+                !ray.hit.is_hit(),
+                "layout found a hit where brute force found none"
+            ),
             Some((t, _)) => {
                 assert!(ray.hit.is_hit(), "layout missed a hit at t = {t}");
-                assert!((ray.hit.t - t).abs() <= 1e-9 * t.max(1.0), "distance mismatch: layout {} vs brute force {t}", ray.hit.t);
+                assert!(
+                    (ray.hit.t - t).abs() <= 1e-9 * t.max(1.0),
+                    "distance mismatch: layout {} vs brute force {t}",
+                    ray.hit.t
+                );
                 hits += 1;
             }
         }
     }
-    assert!(hits > rays / 4, "too few hits ({hits} of {rays}) for the test to be meaningful");
+    assert!(
+        hits > rays / 4,
+        "too few hits ({hits} of {rays}) for the test to be meaningful"
+    );
 }
 
 /// The message of a panic payload, whichever form `panic!` produced it in.
@@ -122,12 +141,21 @@ fn temp_dir(name: &str) -> std::path::PathBuf {
 fn node_layout_matches_tinybvh() {
     assert_eq!(core::mem::size_of::<BvhNodeEx>(), 64);
     assert_eq!(core::mem::align_of::<BvhNodeEx>(), 8);
-    let leaf = BvhNodeEx { aabb_min: DVec3::ZERO, left_first: 4, aabb_max: DVec3::new(1.0, 2.0, 3.0), tri_count: 3 };
+    let leaf = BvhNodeEx {
+        aabb_min: DVec3::ZERO,
+        left_first: 4,
+        aabb_max: DVec3::new(1.0, 2.0, 3.0),
+        tri_count: 3,
+    };
     assert!(leaf.is_leaf());
     assert_eq!(leaf.children(), None);
     assert_eq!(leaf.prim_range(), 4..7);
     assert_relative_eq!(leaf.half_area(), 2.0 + 6.0 + 3.0);
-    let interior = BvhNodeEx { tri_count: 0, left_first: 8, ..leaf };
+    let interior = BvhNodeEx {
+        tri_count: 0,
+        left_first: 8,
+        ..leaf
+    };
     assert!(!interior.is_leaf());
     assert_eq!(interior.children(), Some((8, 9)));
     assert_eq!(interior.prim_range(), 0..0);
@@ -152,7 +180,9 @@ fn build_and_intersect_soup() {
     assert_relative_eq!(ray.hit.t, 3.0, epsilon = 1e-12);
     assert_eq!(ray.hit.prim, 1);
     assert_eq!(ray.hit.inst, 0);
-    assert!(ray.hit_point().abs_diff_eq(DVec3::new(0.0, 0.0, 3.0), 1e-12));
+    assert!(ray
+        .hit_point()
+        .abs_diff_eq(DVec3::new(0.0, 0.0, 3.0), 1e-12));
     // Barycentrics: the hit at (0, 0) on the triangle (-1,-1), (1,-1), (0,1) has v = 0.5, u = 0.25.
     assert_relative_eq!(ray.hit.v, 0.5, epsilon = 1e-12);
     assert_relative_eq!(ray.hit.u, 0.25, epsilon = 1e-12);
@@ -213,7 +243,10 @@ fn soup_and_indexed_agree() {
     assert_eq!(a.prim_count(), b.prim_count());
     assert_eq!(b.indices().unwrap(), &indices[..]);
     assert_eq!(b.geometry().unwrap().triangle_count(), 512);
-    assert_eq!(b.geometry().unwrap().triangle(0), [verts[0], verts[1], verts[17]]);
+    assert_eq!(
+        b.geometry().unwrap().triangle(0),
+        [verts[0], verts[1], verts[17]]
+    );
     assert!(a.indices().is_none());
 
     let mut c = Bvh4Double::new();
@@ -255,20 +288,36 @@ fn soup_and_indexed_agree() {
 fn builders_match_brute_force() {
     let verts = random_triangles(2000, 7);
     let variants: Vec<Variant<BvhDouble>> = vec![
-        ("default", Box::new(|b: &mut BvhDouble| b.build(random_triangles(2000, 7)))),
-        ("hq", Box::new(|b: &mut BvhDouble| b.build_hq(random_triangles(2000, 7)))),
-        ("quick", Box::new(|b: &mut BvhDouble| b.build_quick(random_triangles(2000, 7)))),
+        (
+            "default",
+            Box::new(|b: &mut BvhDouble| b.build(random_triangles(2000, 7))),
+        ),
+        (
+            "hq",
+            Box::new(|b: &mut BvhDouble| b.build_hq(random_triangles(2000, 7))),
+        ),
+        (
+            "quick",
+            Box::new(|b: &mut BvhDouble| b.build_quick(random_triangles(2000, 7))),
+        ),
         (
             "binned",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { binned_bvh: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    binned_bvh: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "sbvh",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    binned_bvh: true,
+                    use_spatial_splits: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
@@ -282,33 +331,52 @@ fn builders_match_brute_force() {
         (
             "single-threaded",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    enable_threading: false,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "full-sweep",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { use_full_sweep: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_full_sweep: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "hploc",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { use_hploc: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_hploc: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "presplit+optimize",
             Box::new(|b: &mut BvhDouble| {
-                b.set_settings(&BuildSettings { use_presplitting: true, post_optimize: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    use_presplitting: true,
+                    post_optimize: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
-        ("indexed", Box::new(|b: &mut BvhDouble| b.build(indexed_copy(&random_triangles(2000, 7))))),
-        ("indexed-hq", Box::new(|b: &mut BvhDouble| b.build_hq(indexed_copy(&random_triangles(2000, 7))))),
+        (
+            "indexed",
+            Box::new(|b: &mut BvhDouble| b.build(indexed_copy(&random_triangles(2000, 7)))),
+        ),
+        (
+            "indexed-hq",
+            Box::new(|b: &mut BvhDouble| b.build_hq(indexed_copy(&random_triangles(2000, 7)))),
+        ),
     ];
     for (name, build) in variants {
         let mut bvh = BvhDouble::new();
@@ -325,21 +393,40 @@ fn builders_match_brute_force() {
     }
 
     let variants4: Vec<Variant<Bvh4Double>> = vec![
-        ("default", Box::new(|b: &mut Bvh4Double| b.build(random_triangles(2000, 7)))),
-        ("hq", Box::new(|b: &mut Bvh4Double| b.build_hq(random_triangles(2000, 7)))),
-        ("indexed", Box::new(|b: &mut Bvh4Double| b.build(indexed_copy(&random_triangles(2000, 7))))),
-        ("indexed-hq", Box::new(|b: &mut Bvh4Double| b.build_hq(indexed_copy(&random_triangles(2000, 7))))),
+        (
+            "default",
+            Box::new(|b: &mut Bvh4Double| b.build(random_triangles(2000, 7))),
+        ),
+        (
+            "hq",
+            Box::new(|b: &mut Bvh4Double| b.build_hq(random_triangles(2000, 7))),
+        ),
+        (
+            "indexed",
+            Box::new(|b: &mut Bvh4Double| b.build(indexed_copy(&random_triangles(2000, 7)))),
+        ),
+        (
+            "indexed-hq",
+            Box::new(|b: &mut Bvh4Double| b.build_hq(indexed_copy(&random_triangles(2000, 7)))),
+        ),
         (
             "sbvh",
             Box::new(|b: &mut Bvh4Double| {
-                b.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    binned_bvh: true,
+                    use_spatial_splits: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
         (
             "discard-intermediates",
             Box::new(|b: &mut Bvh4Double| {
-                b.set_settings(&BuildSettings { discard_intermediates: true, ..Default::default() });
+                b.set_settings(&BuildSettings {
+                    discard_intermediates: true,
+                    ..Default::default()
+                });
                 b.build(random_triangles(2000, 7))
             }),
         ),
@@ -478,7 +565,11 @@ fn refit_is_refused_when_not_possible() {
     assert_eq!(Bvh4Double::new().optimize(5), Err(Error::NotBuilt));
 
     let mut hq = BvhDouble::new();
-    hq.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+    hq.set_settings(&BuildSettings {
+        binned_bvh: true,
+        use_spatial_splits: true,
+        ..Default::default()
+    });
     hq.build(random_triangles(500, 1));
     assert!(!hq.is_refittable());
     assert_eq!(hq.refit(), Err(Error::NotRefittable));
@@ -509,7 +600,10 @@ fn refit_is_refused_when_not_possible() {
     merged.optimize(2);
 
     let mut discarded = Bvh4Double::new();
-    discarded.set_settings(&BuildSettings { discard_intermediates: true, ..Default::default() });
+    discarded.set_settings(&BuildSettings {
+        discard_intermediates: true,
+        ..Default::default()
+    });
     discarded.build(two_triangles());
     assert!(discarded.is_built());
     assert_eq!(discarded.refit(), Err(Error::NotRebuildable));
@@ -525,7 +619,10 @@ fn refit_is_refused_when_not_possible() {
 fn maintenance_operations() {
     let verts = random_triangles(3000, 21);
     let mut bvh = BvhDouble::new();
-    bvh.set_settings(&BuildSettings { enable_threading: false, ..Default::default() });
+    bvh.set_settings(&BuildSettings {
+        enable_threading: false,
+        ..Default::default()
+    });
     bvh.build(verts.clone());
     let nodes_before = bvh.node_count();
     let leaves_before = bvh.leaf_count();
@@ -538,7 +635,10 @@ fn maintenance_operations() {
     let before = bvh.sah_cost(0);
     bvh.optimize(10);
     let after = bvh.sah_cost(0);
-    assert!(after <= before * 1.001, "optimize made the SAH cost worse: {before} -> {after}");
+    assert!(
+        after <= before * 1.001,
+        "optimize made the SAH cost worse: {before} -> {after}"
+    );
     check_against_brute_force(&verts, 100, 2, |ray| {
         bvh.intersect(ray);
     });
@@ -562,7 +662,10 @@ fn maintenance_operations() {
     assert!(bvh.may_have_holes());
     bvh.compact();
     assert!(bvh.has_ordered_nodes());
-    assert!(!bvh.may_have_holes(), "compaction clears the holes flag left by merge_leafs");
+    assert!(
+        !bvh.may_have_holes(),
+        "compaction clears the holes flag left by merge_leafs"
+    );
     bvh.optimize(2);
     bvh.refit().unwrap();
     check_against_brute_force(&verts, 50, 4, |ray| {
@@ -588,15 +691,24 @@ fn maintenance_operations() {
         } else {
             let (l, r) = node.children().unwrap();
             assert!(l < nodes.len() as u64 && r < nodes.len() as u64);
-            assert_eq!(bvh.prim_count_in(i as u64), bvh.prim_count_in(l) + bvh.prim_count_in(r));
+            assert_eq!(
+                bvh.prim_count_in(i as u64),
+                bvh.prim_count_in(l) + bvh.prim_count_in(r)
+            );
             // Children are enclosed by their parent.
             for c in [l, r] {
                 let child = &nodes[c as usize];
-                assert!(child.aabb_min.cmpge(node.aabb_min).all() && child.aabb_max.cmple(node.aabb_max).all());
+                assert!(
+                    child.aabb_min.cmpge(node.aabb_min).all()
+                        && child.aabb_max.cmple(node.aabb_max).all()
+                );
             }
         }
     }
-    assert!(seen.iter().all(|&s| s), "every primitive is referenced by a leaf");
+    assert!(
+        seen.iter().all(|&s| s),
+        "every primitive is referenced by a leaf"
+    );
     assert!(bvh.sah_cost(nodes[0].children().unwrap().0) > 0.0);
 
     // The 4-wide layout optimizes through its intermediate tree.
@@ -606,7 +718,10 @@ fn maintenance_operations() {
     assert!(before > 0.0);
     bvh4.optimize(10).unwrap();
     let after = bvh4.sah_cost();
-    assert!(after <= before * 1.001, "optimize made the SAH cost worse: {before} -> {after}");
+    assert!(
+        after <= before * 1.001,
+        "optimize made the SAH cost worse: {before} -> {after}"
+    );
     bvh4.optimize_with(2, true).unwrap();
     check_against_brute_force(&verts, 100, 6, |ray| {
         bvh4.intersect(ray);
@@ -628,7 +743,12 @@ fn sphere_query() {
 fn settings_and_costs_round_trip() {
     let mut bvh = BvhDouble::new();
     assert_eq!(bvh.settings(), BuildSettings::default());
-    let custom = BuildSettings { binned_bvh: true, enable_threading: false, optimize_iterations: 12, ..Default::default() };
+    let custom = BuildSettings {
+        binned_bvh: true,
+        enable_threading: false,
+        optimize_iterations: 12,
+        ..Default::default()
+    };
     bvh.set_settings(&custom);
     assert_eq!(bvh.settings(), custom);
     bvh.set_c_trav(2.5);
@@ -827,13 +947,19 @@ fn tlas_with_instances_and_masks() {
     blas.build(two_triangles());
     let blas: Arc<dyn BlasEx> = Arc::new(blas);
     let mut blas4 = Bvh4Double::new();
-    blas4.build(vec![DVec3::new(-1.0, -1.0, 7.0), DVec3::new(1.0, -1.0, 7.0), DVec3::new(0.0, 1.0, 7.0)]);
+    blas4.build(vec![
+        DVec3::new(-1.0, -1.0, 7.0),
+        DVec3::new(1.0, -1.0, 7.0),
+        DVec3::new(0.0, 1.0, 7.0),
+    ]);
     let blas4: Arc<dyn BlasEx> = Arc::new(blas4);
 
     let instances = vec![
         BlasInstanceEx::new(0),
-        BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::new(10.0, 0.0, 0.0))).with_mask(2),
-        BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::new(0.0, 0.0, -10.0))).with_mask(4),
+        BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::new(10.0, 0.0, 0.0)))
+            .with_mask(2),
+        BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::new(0.0, 0.0, -10.0)))
+            .with_mask(4),
         BlasInstanceEx::with_transform(1, DMat4::from_translation(DVec3::new(0.0, 20.0, 0.0))),
     ];
     let mut tlas = BvhDouble::new();
@@ -851,7 +977,9 @@ fn tlas_with_instances_and_masks() {
     let (mn, mx) = tlas.instances()[1].aabb();
     assert_relative_eq!(mn.x, 9.0, epsilon = 1e-12);
     assert_relative_eq!(mx.x, 11.0, epsilon = 1e-12);
-    assert!(tlas.instances()[1].inverse_transform().abs_diff_eq(DMat4::from_translation(DVec3::new(-10.0, 0.0, 0.0)), 1e-12));
+    assert!(tlas.instances()[1]
+        .inverse_transform()
+        .abs_diff_eq(DMat4::from_translation(DVec3::new(-10.0, 0.0, 0.0)), 1e-12));
     let (mn, mx) = tlas.instances()[3].aabb();
     assert_eq!(mn, DVec3::new(-1.0, 19.0, 7.0));
     assert_eq!(mx, DVec3::new(1.0, 21.0, 7.0));
@@ -880,7 +1008,11 @@ fn tlas_with_instances_and_masks() {
     assert_eq!(ray.hit.prim, 0);
     assert_relative_eq!(ray.hit.t, 7.0, epsilon = 1e-12);
     assert!(tlas.is_occluded(&RayEx::new(DVec3::new(0.0, 20.0, 0.0), DVec3::Z)));
-    assert!(!tlas.is_occluded(&RayEx::with_t_max(DVec3::new(0.0, 20.0, 0.0), DVec3::Z, 6.0)));
+    assert!(!tlas.is_occluded(&RayEx::with_t_max(
+        DVec3::new(0.0, 20.0, 0.0),
+        DVec3::Z,
+        6.0
+    )));
 
     // A ray that starts past everything misses.
     let mut ray = RayEx::new(DVec3::new(0.0, 0.0, 8.0), DVec3::Z);
@@ -908,7 +1040,10 @@ fn tlas_with_instances_and_masks() {
     // Instances can be refreshed by hand as well.
     let mut inst = BlasInstanceEx::with_transform(0, DMat4::from_scale(DVec3::splat(2.0)));
     inst.update(&*blas);
-    assert_eq!(inst.aabb(), (DVec3::new(-2.0, -2.0, 6.0), DVec3::new(2.0, 2.0, 10.0)));
+    assert_eq!(
+        inst.aabb(),
+        (DVec3::new(-2.0, -2.0, 6.0), DVec3::new(2.0, 2.0, 10.0))
+    );
 
     // Operations that do not apply to a TLAS.
     let mut blas_only = BvhDouble::new();
@@ -934,7 +1069,8 @@ fn tlas_over_custom_blas_passes_state() {
     tlas.build_tlas(
         vec![
             BlasInstanceEx::new(0).with_mask(1),
-            BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::X * 20.0)).with_mask(2),
+            BlasInstanceEx::with_transform(0, DMat4::from_translation(DVec3::X * 20.0))
+                .with_mask(2),
         ],
         vec![Arc::new(blas)],
     );
@@ -947,7 +1083,11 @@ fn tlas_over_custom_blas_passes_state() {
     assert_eq!(ray.hit.user[0], 0xC0FFEE);
     assert_eq!(ray.hit.user[1], 1);
     assert_eq!(ray.hit.user[2], 2);
-    assert_eq!(ray.inst_idx(), 0, "the instance index is restored after traversal");
+    assert_eq!(
+        ray.inst_idx(),
+        0,
+        "the instance index is restored after traversal"
+    );
 
     let mut ray = RayEx::new(DVec3::ZERO, DVec3::Z).with_mask(1);
     tlas.intersect(&mut ray);
@@ -979,7 +1119,10 @@ fn save_and_load_bvh_double() {
     assert_eq!(loaded.nodes(), &reference_nodes[..]);
     assert_eq!(loaded.vertices().unwrap(), &verts[..]);
     assert!(loaded.indices().is_none());
-    assert!(loaded.geometry().is_none(), "loaded geometry is owned by tinybvh");
+    assert!(
+        loaded.geometry().is_none(),
+        "loaded geometry is owned by tinybvh"
+    );
     check_against_brute_force(&verts, 100, 8, |ray| {
         loaded.intersect(ray);
     });
@@ -1004,18 +1147,35 @@ fn save_and_load_bvh_double() {
 
     // Wrong geometry is rejected and leaves the structure empty.
     let mut wrong = BvhDouble::new();
-    assert!(matches!(wrong.load(&path, random_triangles(10, 1)), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(&path, random_triangles(10, 1)),
+        Err(Error::LoadFailed(_))
+    ));
     assert!(!wrong.is_built());
     let (gv, gi) = grid_indexed_d(4, 1.0, 0.0);
-    assert!(matches!(wrong.load(&path, (gv, gi)), Err(Error::LoadFailed(_))), "indexing must match");
-    assert!(matches!(BvhDouble::load_self_contained(dir.join("missing.bvh")), Err(Error::LoadFailed(_))));
-    assert!(matches!(wrong.load(dir.join("missing.bvh"), verts.clone()), Err(Error::LoadFailed(_))));
+    assert!(
+        matches!(wrong.load(&path, (gv, gi)), Err(Error::LoadFailed(_))),
+        "indexing must match"
+    );
+    assert!(matches!(
+        BvhDouble::load_self_contained(dir.join("missing.bvh")),
+        Err(Error::LoadFailed(_))
+    ));
+    assert!(matches!(
+        wrong.load(dir.join("missing.bvh"), verts.clone()),
+        Err(Error::LoadFailed(_))
+    ));
 
     // Without geometry a self-contained load is refused.
     let nodes_only = dir.join("nodes.bvh");
     bvh.save(&nodes_only, false).unwrap();
-    assert!(std::fs::metadata(&nodes_only).unwrap().len() < std::fs::metadata(&path).unwrap().len());
-    assert!(matches!(BvhDouble::load_self_contained(&nodes_only), Err(Error::LoadFailed(_))));
+    assert!(
+        std::fs::metadata(&nodes_only).unwrap().len() < std::fs::metadata(&path).unwrap().len()
+    );
+    assert!(matches!(
+        BvhDouble::load_self_contained(&nodes_only),
+        Err(Error::LoadFailed(_))
+    ));
     let mut bound2 = BvhDouble::new();
     bound2.load(&nodes_only, verts.clone()).unwrap();
     assert_eq!(bound2.nodes(), &reference_nodes[..]);
@@ -1057,7 +1217,10 @@ fn save_and_load_bvh4_double() {
     assert_eq!(bound.prim_count(), 1000);
     assert_eq!(bound.data(), &reference[..]);
     assert_eq!(bound.geometry().unwrap().vertices, verts);
-    assert!(bound.vertices_mut().is_none(), "a loaded layout does not reference its geometry");
+    assert!(
+        bound.vertices_mut().is_none(),
+        "a loaded layout does not reference its geometry"
+    );
     assert_eq!(bound.refit(), Err(Error::NotRebuildable));
     assert_eq!(bound.optimize(5), Err(Error::NotRebuildable));
     check_against_brute_force(&verts, 100, 9, |ray| {
@@ -1079,18 +1242,30 @@ fn save_and_load_bvh4_double() {
     // The wrong triangle count or a missing file is rejected and leaves the structure empty.
     let mut wrong = Bvh4Double::new();
     wrong.build(two_triangles());
-    assert!(matches!(wrong.load(&path, random_triangles(10, 1)), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(&path, random_triangles(10, 1)),
+        Err(Error::LoadFailed(_))
+    ));
     assert!(!wrong.is_built());
     assert!(wrong.data().is_empty());
-    assert!(matches!(wrong.load(dir.join("missing.bvh4"), verts.clone()), Err(Error::LoadFailed(_))));
-    assert!(matches!(Bvh4Double::load_self_contained(dir.join("missing.bvh4")), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(dir.join("missing.bvh4"), verts.clone()),
+        Err(Error::LoadFailed(_))
+    ));
+    assert!(matches!(
+        Bvh4Double::load_self_contained(dir.join("missing.bvh4")),
+        Err(Error::LoadFailed(_))
+    ));
 
     // A BvhDouble file is not a Bvh4Double file for `load`...
     let bvh_path = dir.join("binary.bvh");
     let mut binary = BvhDouble::new();
     binary.build(verts.clone());
     binary.save(&bvh_path, true).unwrap();
-    assert!(matches!(wrong.load(&bvh_path, verts.clone()), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        wrong.load(&bvh_path, verts.clone()),
+        Err(Error::LoadFailed(_))
+    ));
     // ... but `load_self_contained` converts a BvhDouble file saved with its geometry.
     let converted = Bvh4Double::load_self_contained(&bvh_path).unwrap();
     assert_eq!(converted.prim_count(), 1000);
@@ -1099,7 +1274,10 @@ fn save_and_load_bvh4_double() {
     });
     let nodes_only = dir.join("nodes.bvh");
     binary.save(&nodes_only, false).unwrap();
-    assert!(matches!(Bvh4Double::load_self_contained(&nodes_only), Err(Error::LoadFailed(_))));
+    assert!(matches!(
+        Bvh4Double::load_self_contained(&nodes_only),
+        Err(Error::LoadFailed(_))
+    ));
 
     // A loaded layout can be rebuilt from scratch and then refitted again.
     let mut again = Bvh4Double::load_self_contained(&path).unwrap();
@@ -1217,7 +1395,10 @@ fn partial_triangle_panics_bvh4() {
 #[test]
 #[should_panic(expected = "out of range")]
 fn bad_index_panics() {
-    BvhDouble::new().build(GeometryEx::indexed(vec![DVec3::ZERO, DVec3::ONE, DVec3::X], vec![0, 1, 3]));
+    BvhDouble::new().build(GeometryEx::indexed(
+        vec![DVec3::ZERO, DVec3::ONE, DVec3::X],
+        vec![0, 1, 3],
+    ));
 }
 
 #[test]
@@ -1312,7 +1493,10 @@ fn tlas_bad_blas_index_panics() {
 #[test]
 #[should_panic(expected = "has not been built")]
 fn tlas_unbuilt_blas_panics() {
-    BvhDouble::new().build_tlas(vec![BlasInstanceEx::new(0)], vec![Arc::new(Bvh4Double::new())]);
+    BvhDouble::new().build_tlas(
+        vec![BlasInstanceEx::new(0)],
+        vec![Arc::new(Bvh4Double::new())],
+    );
 }
 
 #[test]
@@ -1339,4 +1523,3 @@ fn nan_ray_panics_bvh4() {
     bvh.build(two_triangles());
     bvh.is_occluded(&RayEx::with_t_max(DVec3::ZERO, DVec3::Z, f64::NAN));
 }
-

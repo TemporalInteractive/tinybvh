@@ -28,13 +28,23 @@ use crate::ray::Ray;
 /// tinybvh's conversion left a layout without CPU-traversable triangle data (see
 /// [`BvhGpu::intersect`]). Returns whether anything was hit; with `any_hit` the first hit ends
 /// the search and `ray` is not modified.
-fn intersect_triangles(verts: &[Vec4], indices: Option<&[u32]>, count: usize, ray: &mut Ray, any_hit: bool) -> bool {
+fn intersect_triangles(
+    verts: &[Vec4],
+    indices: Option<&[u32]>,
+    count: usize,
+    ray: &mut Ray,
+    any_hit: bool,
+) -> bool {
     let origin = ray.origin;
     let dir = ray.direction();
     let mut hit = false;
     for prim in 0..count {
         let [i0, i1, i2] = match indices {
-            Some(idx) => [idx[prim * 3] as usize, idx[prim * 3 + 1] as usize, idx[prim * 3 + 2] as usize],
+            Some(idx) => [
+                idx[prim * 3] as usize,
+                idx[prim * 3 + 1] as usize,
+                idx[prim * 3 + 2] as usize,
+            ],
             None => [prim * 3, prim * 3 + 1, prim * 3 + 2],
         };
         let v0 = verts[i0].truncate();
@@ -172,7 +182,8 @@ impl BvhGpuNode {
     }
 }
 
-const _: () = assert!(core::mem::size_of::<BvhGpuNode>() == core::mem::size_of::<ffi::tbvh_bvh_gpu_node>());
+const _: () =
+    assert!(core::mem::size_of::<BvhGpuNode>() == core::mem::size_of::<ffi::tbvh_bvh_gpu_node>());
 
 /// What a [`BvhGpu`] was built over; keeps the referenced data alive.
 enum GpuSource {
@@ -181,7 +192,11 @@ enum GpuSource {
     /// Triangles owned by the structure.
     Triangles(Geometry),
     /// A TLAS over instances of other structures.
-    Tlas { instances: Vec<BlasInstance>, blasses: Vec<Arc<dyn Blas>>, blas_ptrs: Vec<*mut ffi::tbvh_base> },
+    Tlas {
+        instances: Vec<BlasInstance>,
+        blasses: Vec<Arc<dyn Blas>>,
+        blas_ptrs: Vec<*mut ffi::tbvh_base>,
+    },
     /// Converted from a [`Bvh`], which tinybvh keeps referencing.
     Converted(Bvh),
 }
@@ -269,8 +284,18 @@ impl BvhGpu {
         let raw = self.raw.as_ptr();
         unsafe {
             match (geometry.index_args(), hq) {
-                (None, false) => ffi::tbvh_bvh_gpu_build(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
-                (None, true) => ffi::tbvh_bvh_gpu_build_hq(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
+                (None, false) => ffi::tbvh_bvh_gpu_build(
+                    raw,
+                    geometry.vert_ptr(),
+                    geometry.vert_count(),
+                    geometry::VEC4_STRIDE,
+                ),
+                (None, true) => ffi::tbvh_bvh_gpu_build_hq(
+                    raw,
+                    geometry.vert_ptr(),
+                    geometry.vert_count(),
+                    geometry::VEC4_STRIDE,
+                ),
                 (Some((idx, prims)), false) => ffi::tbvh_bvh_gpu_build_indexed(
                     raw,
                     geometry.vert_ptr(),
@@ -304,8 +329,14 @@ impl BvhGpu {
     /// Panics if there are no instances, an instance refers to a BLAS index out of range, or a
     /// BLAS has not been built.
     pub fn build_tlas(&mut self, instances: Vec<BlasInstance>, blasses: Vec<Arc<dyn Blas>>) {
-        assert!(!instances.is_empty(), "tinybvh: a TLAS needs at least one instance");
-        assert!(!blasses.is_empty(), "tinybvh: a TLAS needs at least one BLAS");
+        assert!(
+            !instances.is_empty(),
+            "tinybvh: a TLAS needs at least one instance"
+        );
+        assert!(
+            !blasses.is_empty(),
+            "tinybvh: a TLAS needs at least one BLAS"
+        );
         for (i, inst) in instances.iter().enumerate() {
             assert!(
                 (inst.blas_idx as usize) < blasses.len(),
@@ -317,9 +348,16 @@ impl BvhGpu {
         for (i, blas) in blasses.iter().enumerate() {
             assert!(blas.blas_is_ready(), "tinybvh: BLAS {i} has not been built");
         }
-        let blas_ptrs: Vec<*mut ffi::tbvh_base> = blasses.iter().map(|b| b.blas_base_ptr() as *mut _).collect();
+        let blas_ptrs: Vec<*mut ffi::tbvh_base> = blasses
+            .iter()
+            .map(|b| b.blas_base_ptr() as *mut _)
+            .collect();
         let old = core::mem::replace(&mut self.source, GpuSource::Empty);
-        self.source = GpuSource::Tlas { instances, blasses, blas_ptrs };
+        self.source = GpuSource::Tlas {
+            instances,
+            blasses,
+            blas_ptrs,
+        };
         self.run_tlas_build();
         self.rebuildable = true;
         self.leaf_root = false;
@@ -340,7 +378,12 @@ impl BvhGpu {
 
     fn run_tlas_build(&mut self) {
         let raw = self.raw.as_ptr();
-        if let GpuSource::Tlas { instances, blas_ptrs, .. } = &mut self.source {
+        if let GpuSource::Tlas {
+            instances,
+            blas_ptrs,
+            ..
+        } = &mut self.source
+        {
             unsafe {
                 ffi::tbvh_bvh_gpu_build_tlas(
                     raw,
@@ -387,7 +430,9 @@ impl BvhGpu {
     /// empty leaf, and skips building the reordered triangle data its CPU traversal reads
     /// (tinybvh 1.9.1, `BVH_GPU::ConvertFrom`). Such a tree is recognizable by that empty leaf.
     fn detect_leaf_root(&self) -> bool {
-        self.nodes().first().is_some_and(|root| root.right == BvhGpuNode::LEAF_FLAG)
+        self.nodes()
+            .first()
+            .is_some_and(|root| root.right == BvhGpuNode::LEAF_FLAG)
     }
 
     // --- queries ---------------------------------------------------------------------------------
@@ -427,7 +472,9 @@ impl BvhGpu {
         self.assert_traversable();
         ray.assert_finite();
         if self.leaf_root {
-            let (verts, indices) = self.fallback_triangles().expect("tinybvh: no triangle data for a single-leaf tree");
+            let (verts, indices) = self
+                .fallback_triangles()
+                .expect("tinybvh: no triangle data for a single-leaf tree");
             let count = self.prim_count() as usize;
             intersect_triangles(verts, indices, count, ray, false);
             return count as u32;
@@ -441,9 +488,17 @@ impl BvhGpu {
         self.assert_traversable();
         ray.assert_finite();
         if self.leaf_root {
-            let (verts, indices) = self.fallback_triangles().expect("tinybvh: no triangle data for a single-leaf tree");
+            let (verts, indices) = self
+                .fallback_triangles()
+                .expect("tinybvh: no triangle data for a single-leaf tree");
             let mut probe = *ray;
-            return intersect_triangles(verts, indices, self.prim_count() as usize, &mut probe, true);
+            return intersect_triangles(
+                verts,
+                indices,
+                self.prim_count() as usize,
+                &mut probe,
+                true,
+            );
         }
         unsafe { ffi::tbvh_bvh_gpu_is_occluded(self.raw.as_ptr(), ray.as_ffi()) }
     }
@@ -482,7 +537,10 @@ impl BvhGpu {
     /// Panics if the structure has not been built or `node` is out of range.
     pub fn sah_cost(&self, node: u32) -> f32 {
         assert!(self.is_built(), "tinybvh: the BvhGpu has not been built");
-        assert!(node < self.internal_node_count(), "tinybvh: node index out of range");
+        assert!(
+            node < self.internal_node_count(),
+            "tinybvh: node index out of range"
+        );
         // The C function takes a mutable handle because tinybvh declares BVH_GPU::SAHCost without
         // const; it only reads the tree, so handing it the pointer from `&self` is sound.
         unsafe { ffi::tbvh_bvh_gpu_sah_cost(self.raw.as_ptr(), node) }
@@ -687,7 +745,11 @@ macro_rules! impl_block_layout {
             pub fn new() -> Self {
                 crate::install_fatal_trampoline();
                 let raw = unsafe { ffi::$new() };
-                $ty { raw: NonNull::new(raw).expect("tinybvh: allocation failed"), source: BlockSource::Empty, rebuildable: true }
+                $ty {
+                    raw: NonNull::new(raw).expect("tinybvh: allocation failed"),
+                    source: BlockSource::Empty,
+                    rebuildable: true,
+                }
             }
 
             /// Builds over triangles with the builder selected by the [settings](Self::settings).
@@ -712,14 +774,34 @@ macro_rules! impl_block_layout {
                 let raw = self.raw.as_ptr();
                 unsafe {
                     match (geometry.index_args(), hq) {
-                        (None, false) => ffi::$build(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
-                        (None, true) => ffi::$build_hq(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
-                        (Some((idx, prims)), false) => {
-                            ffi::$build_indexed(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE, idx, prims)
-                        }
-                        (Some((idx, prims)), true) => {
-                            ffi::$build_hq_indexed(raw, geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE, idx, prims)
-                        }
+                        (None, false) => ffi::$build(
+                            raw,
+                            geometry.vert_ptr(),
+                            geometry.vert_count(),
+                            geometry::VEC4_STRIDE,
+                        ),
+                        (None, true) => ffi::$build_hq(
+                            raw,
+                            geometry.vert_ptr(),
+                            geometry.vert_count(),
+                            geometry::VEC4_STRIDE,
+                        ),
+                        (Some((idx, prims)), false) => ffi::$build_indexed(
+                            raw,
+                            geometry.vert_ptr(),
+                            geometry.vert_count(),
+                            geometry::VEC4_STRIDE,
+                            idx,
+                            prims,
+                        ),
+                        (Some((idx, prims)), true) => ffi::$build_hq_indexed(
+                            raw,
+                            geometry.vert_ptr(),
+                            geometry.vert_count(),
+                            geometry::VEC4_STRIDE,
+                            idx,
+                            prims,
+                        ),
                     }
                 }
                 self.source = BlockSource::Triangles(geometry);
@@ -783,7 +865,10 @@ macro_rules! impl_block_layout {
             /// Panics if the structure has not been built, `node` is out of range, or the
             /// structure was loaded from a file: a load discards the intermediate tree.
             pub fn sah_cost(&self, node: u32) -> f32 {
-                assert!(self.is_built(), concat!("tinybvh: the ", stringify!($ty), " has not been built"));
+                assert!(
+                    self.is_built(),
+                    concat!("tinybvh: the ", stringify!($ty), " has not been built")
+                );
                 assert!(
                     !matches!(self.source, BlockSource::Loaded),
                     "tinybvh: a loaded structure keeps no intermediate tree to evaluate the SAH on"
@@ -910,11 +995,18 @@ pub struct Bvh4Gpu {
 
 impl_base_accessors!(Bvh4Gpu, tbvh_bvh4_gpu_base, tbvh_bvh4_gpu_base_const);
 impl_block_layout!(
-    Bvh4Gpu, tbvh_bvh4_gpu, Mbvh4,
-    new = tbvh_bvh4_gpu_new, free = tbvh_bvh4_gpu_free,
-    build = tbvh_bvh4_gpu_build, build_indexed = tbvh_bvh4_gpu_build_indexed,
-    build_hq = tbvh_bvh4_gpu_build_hq, build_hq_indexed = tbvh_bvh4_gpu_build_hq_indexed,
-    optimize = tbvh_bvh4_gpu_optimize, sah_cost = tbvh_bvh4_gpu_sah_cost, load = tbvh_bvh4_gpu_load_self_contained,
+    Bvh4Gpu,
+    tbvh_bvh4_gpu,
+    Mbvh4,
+    new = tbvh_bvh4_gpu_new,
+    free = tbvh_bvh4_gpu_free,
+    build = tbvh_bvh4_gpu_build,
+    build_indexed = tbvh_bvh4_gpu_build_indexed,
+    build_hq = tbvh_bvh4_gpu_build_hq,
+    build_hq_indexed = tbvh_bvh4_gpu_build_hq_indexed,
+    optimize = tbvh_bvh4_gpu_optimize,
+    sah_cost = tbvh_bvh4_gpu_sah_cost,
+    load = tbvh_bvh4_gpu_load_self_contained,
     blocks = tbvh_bvh4_gpu_data
 );
 
@@ -1000,13 +1092,24 @@ pub struct Bvh4AmdHw {
     rebuildable: bool,
 }
 
-impl_base_accessors!(Bvh4AmdHw, tbvh_bvh4_amd_hw_base, tbvh_bvh4_amd_hw_base_const);
+impl_base_accessors!(
+    Bvh4AmdHw,
+    tbvh_bvh4_amd_hw_base,
+    tbvh_bvh4_amd_hw_base_const
+);
 impl_block_layout!(
-    Bvh4AmdHw, tbvh_bvh4_amd_hw, Mbvh4,
-    new = tbvh_bvh4_amd_hw_new, free = tbvh_bvh4_amd_hw_free,
-    build = tbvh_bvh4_amd_hw_build, build_indexed = tbvh_bvh4_amd_hw_build_indexed,
-    build_hq = tbvh_bvh4_amd_hw_build_hq, build_hq_indexed = tbvh_bvh4_amd_hw_build_hq_indexed,
-    optimize = tbvh_bvh4_amd_hw_optimize, sah_cost = tbvh_bvh4_amd_hw_sah_cost, load = tbvh_bvh4_amd_hw_load_self_contained,
+    Bvh4AmdHw,
+    tbvh_bvh4_amd_hw,
+    Mbvh4,
+    new = tbvh_bvh4_amd_hw_new,
+    free = tbvh_bvh4_amd_hw_free,
+    build = tbvh_bvh4_amd_hw_build,
+    build_indexed = tbvh_bvh4_amd_hw_build_indexed,
+    build_hq = tbvh_bvh4_amd_hw_build_hq,
+    build_hq_indexed = tbvh_bvh4_amd_hw_build_hq_indexed,
+    optimize = tbvh_bvh4_amd_hw_optimize,
+    sah_cost = tbvh_bvh4_amd_hw_sah_cost,
+    load = tbvh_bvh4_amd_hw_load_self_contained,
     blocks = tbvh_bvh4_amd_hw_data
 );
 
@@ -1080,11 +1183,18 @@ pub struct Bvh8Cwbvh {
 
 impl_base_accessors!(Bvh8Cwbvh, tbvh_bvh8_cwbvh_base, tbvh_bvh8_cwbvh_base_const);
 impl_block_layout!(
-    Bvh8Cwbvh, tbvh_bvh8_cwbvh, Mbvh8,
-    new = tbvh_bvh8_cwbvh_new, free = tbvh_bvh8_cwbvh_free,
-    build = tbvh_bvh8_cwbvh_build, build_indexed = tbvh_bvh8_cwbvh_build_indexed,
-    build_hq = tbvh_bvh8_cwbvh_build_hq, build_hq_indexed = tbvh_bvh8_cwbvh_build_hq_indexed,
-    optimize = tbvh_bvh8_cwbvh_optimize, sah_cost = tbvh_bvh8_cwbvh_sah_cost, load = tbvh_bvh8_cwbvh_load_self_contained,
+    Bvh8Cwbvh,
+    tbvh_bvh8_cwbvh,
+    Mbvh8,
+    new = tbvh_bvh8_cwbvh_new,
+    free = tbvh_bvh8_cwbvh_free,
+    build = tbvh_bvh8_cwbvh_build,
+    build_indexed = tbvh_bvh8_cwbvh_build_indexed,
+    build_hq = tbvh_bvh8_cwbvh_build_hq,
+    build_hq_indexed = tbvh_bvh8_cwbvh_build_hq_indexed,
+    optimize = tbvh_bvh8_cwbvh_optimize,
+    sah_cost = tbvh_bvh8_cwbvh_sah_cost,
+    load = tbvh_bvh8_cwbvh_load_self_contained,
     blocks = tbvh_bvh8_cwbvh_nodes
 );
 
@@ -1172,7 +1282,13 @@ impl Bvh8Cwbvh {
         let cpath = geometry::path_to_cstring(path.as_ref())?;
         // A fresh object: tinybvh's Load overwrites the object without releasing a previous build.
         self.clear();
-        let ok = unsafe { ffi::tbvh_bvh8_cwbvh_load(self.raw.as_ptr(), cpath.as_ptr(), geometry.triangle_count() as u32) };
+        let ok = unsafe {
+            ffi::tbvh_bvh8_cwbvh_load(
+                self.raw.as_ptr(),
+                cpath.as_ptr(),
+                geometry.triangle_count() as u32,
+            )
+        };
         if ok {
             self.source = BlockSource::Triangles(geometry);
             self.rebuildable = false;

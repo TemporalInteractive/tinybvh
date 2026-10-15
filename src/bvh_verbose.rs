@@ -82,7 +82,9 @@ impl BvhVerboseNode {
     }
 }
 
-const _: () = assert!(core::mem::size_of::<BvhVerboseNode>() == core::mem::size_of::<ffi::tbvh_bvh_verbose_node>());
+const _: () = assert!(
+    core::mem::size_of::<BvhVerboseNode>() == core::mem::size_of::<ffi::tbvh_bvh_verbose_node>()
+);
 
 /// The verbose layout (tinybvh's `BVH_Verbose`): 64-byte nodes with parent links, used by the
 /// tree-rotation optimizer and for leaf surgery. It is not traversed directly: convert a [`Bvh`]
@@ -126,14 +128,21 @@ pub struct BvhVerbose {
     source: Option<Bvh>,
 }
 
-impl_base_accessors!(BvhVerbose, tbvh_bvh_verbose_base, tbvh_bvh_verbose_base_const);
+impl_base_accessors!(
+    BvhVerbose,
+    tbvh_bvh_verbose_base,
+    tbvh_bvh_verbose_base_const
+);
 
 impl BvhVerbose {
     /// An empty structure; fill it with [`from_bvh`](Self::from_bvh).
     pub fn new() -> Self {
         crate::install_fatal_trampoline();
         let raw = unsafe { ffi::tbvh_bvh_verbose_new() };
-        BvhVerbose { raw: NonNull::new(raw).expect("tinybvh: allocation failed"), source: None }
+        BvhVerbose {
+            raw: NonNull::new(raw).expect("tinybvh: allocation failed"),
+            source: None,
+        }
     }
 
     /// Converts a built [`Bvh`], taking ownership of it. Every kind of `Bvh` can be converted;
@@ -152,7 +161,10 @@ impl BvhVerbose {
     /// Panics if the structure is empty.
     pub fn into_bvh(mut self) -> Bvh {
         self.assert_built();
-        let mut bvh = self.source.take().expect("tinybvh: the BvhVerbose has no source");
+        let mut bvh = self
+            .source
+            .take()
+            .expect("tinybvh: the BvhVerbose has no source");
         unsafe { ffi::tbvh_bvh_convert_from_verbose(bvh.raw_ptr_mut(), self.raw.as_ptr(), true) };
         // `self` is dropped here, which frees the verbose node pool only.
         bvh
@@ -167,7 +179,10 @@ impl BvhVerbose {
 
     #[inline]
     fn assert_built(&self) {
-        assert!(self.is_built(), "tinybvh: the BvhVerbose has not been built");
+        assert!(
+            self.is_built(),
+            "tinybvh: the BvhVerbose has not been built"
+        );
     }
 
     /// SAH cost of the subtree rooted at `node` (0 for the whole tree): lower is better.
@@ -236,7 +251,10 @@ impl BvhVerbose {
             return Err(crate::Error::NotBuilt);
         }
         assert!(max_prims > 0, "tinybvh: max_prims must be at least 1");
-        let source = self.source.as_ref().expect("tinybvh: the BvhVerbose has no source");
+        let source = self
+            .source
+            .as_ref()
+            .expect("tinybvh: the BvhVerbose has no source");
         if !source.has_fragments() {
             return Err(crate::Error::NotRebuildable);
         }
@@ -266,7 +284,9 @@ impl BvhVerbose {
         if self.may_have_holes() {
             self.compact();
         }
-        unsafe { ffi::tbvh_bvh_verbose_optimize(self.raw.as_ptr(), iterations, extreme, stochastic) };
+        unsafe {
+            ffi::tbvh_bvh_verbose_optimize(self.raw.as_ptr(), iterations, extreme, stochastic)
+        };
     }
 
     // --- data access -----------------------------------------------------------------------------
@@ -314,7 +334,8 @@ impl BvhVerbose {
     pub fn clear(&mut self) {
         unsafe {
             ffi::tbvh_bvh_verbose_free(self.raw.as_ptr());
-            self.raw = NonNull::new(ffi::tbvh_bvh_verbose_new()).expect("tinybvh: allocation failed");
+            self.raw =
+                NonNull::new(ffi::tbvh_bvh_verbose_new()).expect("tinybvh: allocation failed");
         }
         self.source = None;
     }

@@ -17,7 +17,14 @@ fn main() {
     };
     for j in 0..n {
         for i in 0..n {
-            vertices.extend([at(i, j, 0.0), at(i + 1, j, 0.0), at(i, j + 1, 0.0), at(i + 1, j, 0.0), at(i + 1, j + 1, 0.0), at(i, j + 1, 0.0)]);
+            vertices.extend([
+                at(i, j, 0.0),
+                at(i + 1, j, 0.0),
+                at(i, j + 1, 0.0),
+                at(i + 1, j, 0.0),
+                at(i + 1, j + 1, 0.0),
+                at(i, j + 1, 0.0),
+            ]);
         }
     }
 
@@ -25,7 +32,11 @@ fn main() {
     let mut bvh = Bvh::new().with_settings(&BuildSettings::refittable());
     let start = Instant::now();
     bvh.build(vertices);
-    println!("initial build of {} triangles: {:.2?}", bvh.prim_count(), start.elapsed());
+    println!(
+        "initial build of {} triangles: {:.2?}",
+        bvh.prim_count(),
+        start.elapsed()
+    );
 
     for frame in 1..=5 {
         let t = frame as f32 * 0.25;
@@ -43,7 +54,12 @@ fn main() {
 
         let mut ray = Ray::new(Vec3::new(0.3, 10.0, 0.3), -Vec3::Y);
         bvh.intersect(&mut ray);
-        println!("frame {frame}: refit {:.2?}, surface at y = {:.3}, SAH cost {:.2}", refit_time, ray.hit_point().y, bvh.sah_cost(0));
+        println!(
+            "frame {frame}: refit {:.2?}, surface at y = {:.3}, SAH cost {:.2}",
+            refit_time,
+            ray.hit_point().y,
+            bvh.sah_cost(0)
+        );
     }
 
     // For comparison, a full rebuild of the final frame.
@@ -51,5 +67,9 @@ fn main() {
     let mut rebuilt = Bvh::new();
     let start = Instant::now();
     rebuilt.build(geometry);
-    println!("full rebuild: {:.2?}, SAH cost {:.2}", start.elapsed(), rebuilt.sah_cost(0));
+    println!(
+        "full rebuild: {:.2?}, SAH cost {:.2}",
+        start.elapsed(),
+        rebuilt.sah_cost(0)
+    );
 }

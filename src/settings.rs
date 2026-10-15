@@ -88,12 +88,19 @@ impl Default for BuildSettings {
 impl BuildSettings {
     /// Settings for the highest quality builder: spatial splits (Bonsai HQ).
     pub fn high_quality() -> Self {
-        BuildSettings { use_spatial_splits: true, ..Default::default() }
+        BuildSettings {
+            use_spatial_splits: true,
+            ..Default::default()
+        }
     }
 
     /// Settings for a plain binned SAH build without spatial splits, which keeps the tree refittable.
     pub fn refittable() -> Self {
-        BuildSettings { use_spatial_splits: false, use_presplitting: false, ..Default::default() }
+        BuildSettings {
+            use_spatial_splits: false,
+            use_presplitting: false,
+            ..Default::default()
+        }
     }
 
     pub(crate) fn to_ffi(self) -> ffi::tbvh_build_settings {

@@ -46,7 +46,11 @@ pub fn random_triangles(count: usize, seed: u64) -> Vec<Vec4> {
 
 /// A single triangle in the plane z = `z`, spanning roughly [-1, 1] in x and y.
 pub fn triangle_at(z: f32) -> [Vec4; 3] {
-    [Vec4::new(-1.0, -1.0, z, 0.0), Vec4::new(1.0, -1.0, z, 0.0), Vec4::new(0.0, 1.0, z, 0.0)]
+    [
+        Vec4::new(-1.0, -1.0, z, 0.0),
+        Vec4::new(1.0, -1.0, z, 0.0),
+        Vec4::new(0.0, 1.0, z, 0.0),
+    ]
 }
 
 /// A regular grid of `n x n` quads (two triangles each) in the plane z = `z`, covering
@@ -61,7 +65,12 @@ pub fn grid_indexed(n: usize, size: f32, z: f32) -> (Vec<Vec4>, Vec<u32>) {
     let mut verts = Vec::with_capacity((n + 1) * (n + 1));
     for j in 0..=n {
         for i in 0..=n {
-            verts.push(Vec4::new(i as f32 / n as f32 * size, j as f32 / n as f32 * size, z, 0.0));
+            verts.push(Vec4::new(
+                i as f32 / n as f32 * size,
+                j as f32 / n as f32 * size,
+                z,
+                0.0,
+            ));
         }
     }
     let mut indices = Vec::with_capacity(n * n * 6);
@@ -86,7 +95,11 @@ pub fn grid_indexed_d(n: usize, size: f64, z: f64) -> (Vec<DVec3>, Vec<u64>) {
     let mut verts = Vec::with_capacity((n + 1) * (n + 1));
     for j in 0..=n {
         for i in 0..=n {
-            verts.push(DVec3::new(i as f64 / n as f64 * size, j as f64 / n as f64 * size, z));
+            verts.push(DVec3::new(
+                i as f64 / n as f64 * size,
+                j as f64 / n as f64 * size,
+                z,
+            ));
         }
     }
     let mut indices = Vec::with_capacity(n * n * 6);
@@ -149,7 +162,10 @@ pub fn check_against_brute_force(
         intersect(&mut ray);
         let reference = brute_force_hit(verts, origin, dir);
         match reference {
-            None => assert!(!ray.hit.is_hit(), "layout found a hit where brute force found none"),
+            None => assert!(
+                !ray.hit.is_hit(),
+                "layout found a hit where brute force found none"
+            ),
             Some((t, _)) => {
                 assert!(ray.hit.is_hit(), "layout missed a hit at t = {t}");
                 assert!(
@@ -161,5 +177,8 @@ pub fn check_against_brute_force(
             }
         }
     }
-    assert!(hits > rays / 4, "too few hits ({hits} of {rays}) for the test to be meaningful");
+    assert!(
+        hits > rays / 4,
+        "too few hits ({hits} of {rays}) for the test to be meaningful"
+    );
 }

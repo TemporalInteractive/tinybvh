@@ -66,7 +66,10 @@ impl VoxelSet {
     pub fn new() -> Self {
         crate::install_fatal_trampoline();
         let raw = unsafe { ffi::tbvh_voxelset_new() };
-        VoxelSet { raw: NonNull::new(raw).expect("tinybvh: allocation failed"), dirty: false }
+        VoxelSet {
+            raw: NonNull::new(raw).expect("tinybvh: allocation failed"),
+            dirty: false,
+        }
     }
 
     /// Number of voxels along each axis (tinybvh's `VoxelSet::objectDim`, 256).
@@ -78,7 +81,10 @@ impl VoxelSet {
     /// coordinate is not below [`object_dim`](Self::object_dim).
     pub fn set(&mut self, x: u32, y: u32, z: u32, value: u32) {
         let dim = Self::object_dim();
-        assert!(x < dim && y < dim && z < dim, "tinybvh: voxel ({x}, {y}, {z}) is outside the {dim}^3 object");
+        assert!(
+            x < dim && y < dim && z < dim,
+            "tinybvh: voxel ({x}, {y}, {z}) is outside the {dim}^3 object"
+        );
         unsafe { ffi::tbvh_voxelset_set(self.raw.as_ptr(), x, y, z, value) };
         self.dirty = true;
     }
@@ -97,7 +103,10 @@ impl VoxelSet {
 
     #[inline]
     fn assert_current(&self) {
-        assert!(!self.dirty, "tinybvh: the VoxelSet was modified; call update_top_grid() before tracing");
+        assert!(
+            !self.dirty,
+            "tinybvh: the VoxelSet was modified; call update_top_grid() before tracing"
+        );
     }
 
     /// Finds the closest voxel along `ray` and records its entry distance in `ray.hit.t` and
@@ -123,7 +132,9 @@ impl VoxelSet {
     /// a ray that [`intersect`](Self::intersect) reported a hit for.
     pub fn normal(&self, ray: &Ray) -> Vec3 {
         ray.assert_finite();
-        geometry::vec3_from_ffi(unsafe { ffi::tbvh_voxelset_normal(self.raw.as_ptr(), ray.as_ffi()) })
+        geometry::vec3_from_ffi(unsafe {
+            ffi::tbvh_voxelset_normal(self.raw.as_ptr(), ray.as_ffi())
+        })
     }
 }
 
@@ -141,7 +152,10 @@ impl Drop for VoxelSet {
 
 impl core::fmt::Debug for VoxelSet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("VoxelSet").field("object_dim", &Self::object_dim()).field("top_grid_stale", &self.dirty).finish()
+        f.debug_struct("VoxelSet")
+            .field("object_dim", &Self::object_dim())
+            .field("top_grid_stale", &self.dirty)
+            .finish()
     }
 }
 

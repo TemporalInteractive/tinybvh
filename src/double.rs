@@ -84,7 +84,11 @@ enum Source {
     /// Custom primitives.
     Custom(CustomHolderEx),
     /// A TLAS over instances of other structures.
-    Tlas { instances: Vec<BlasInstanceEx>, blasses: Vec<Arc<dyn BlasEx>>, blas_ptrs: Vec<*mut ffi::tbvh_base_ex> },
+    Tlas {
+        instances: Vec<BlasInstanceEx>,
+        blasses: Vec<Arc<dyn BlasEx>>,
+        blas_ptrs: Vec<*mut ffi::tbvh_base_ex>,
+    },
     /// Loaded from a self-contained file; tinybvh owns the geometry.
     Loaded,
 }
@@ -135,7 +139,10 @@ impl BvhDouble {
     pub fn new() -> Self {
         crate::install_fatal_trampoline();
         let raw = unsafe { ffi::tbvh_bvh_double_new() };
-        BvhDouble { raw: NonNull::new(raw).expect("tinybvh: allocation failed"), source: Source::Empty }
+        BvhDouble {
+            raw: NonNull::new(raw).expect("tinybvh: allocation failed"),
+            source: Source::Empty,
+        }
     }
 
     // --- builders ------------------------------------------------------------------------------
@@ -204,7 +211,10 @@ impl BvhDouble {
     pub fn build_quick(&mut self, geometry: impl Into<GeometryEx>) {
         let geometry = geometry.into();
         geometry.validate();
-        assert!(geometry.indices.is_none(), "tinybvh: build_quick does not support indexed geometry");
+        assert!(
+            geometry.indices.is_none(),
+            "tinybvh: build_quick does not support indexed geometry"
+        );
         self.reset_source();
         unsafe {
             ffi::tbvh_bvh_double_build_quick(
@@ -237,7 +247,12 @@ impl BvhDouble {
                 CustomHolderEx::occluded_fn(),
                 holder.user_ptr(),
             );
-            ffi::tbvh_bvh_double_build_custom(self.raw.as_ptr(), CustomHolderEx::aabb_fn(), prim_count, holder.user_ptr());
+            ffi::tbvh_bvh_double_build_custom(
+                self.raw.as_ptr(),
+                CustomHolderEx::aabb_fn(),
+                prim_count,
+                holder.user_ptr(),
+            );
         }
         self.source = Source::Custom(holder);
         geometry::rethrow_pending_panic();
@@ -251,8 +266,14 @@ impl BvhDouble {
     /// Panics if there are no instances, an instance refers to a BLAS index out of range, or a
     /// BLAS has not been built.
     pub fn build_tlas(&mut self, instances: Vec<BlasInstanceEx>, blasses: Vec<Arc<dyn BlasEx>>) {
-        assert!(!instances.is_empty(), "tinybvh: a TLAS needs at least one instance");
-        assert!(!blasses.is_empty(), "tinybvh: a TLAS needs at least one BLAS");
+        assert!(
+            !instances.is_empty(),
+            "tinybvh: a TLAS needs at least one instance"
+        );
+        assert!(
+            !blasses.is_empty(),
+            "tinybvh: a TLAS needs at least one BLAS"
+        );
         for (i, inst) in instances.iter().enumerate() {
             assert!(
                 (inst.blas_idx as usize) < blasses.len(),
@@ -264,9 +285,16 @@ impl BvhDouble {
         for (i, blas) in blasses.iter().enumerate() {
             assert!(blas.blas_is_ready(), "tinybvh: BLAS {i} has not been built");
         }
-        let blas_ptrs: Vec<*mut ffi::tbvh_base_ex> = blasses.iter().map(|b| b.blas_base_ptr() as *mut _).collect();
+        let blas_ptrs: Vec<*mut ffi::tbvh_base_ex> = blasses
+            .iter()
+            .map(|b| b.blas_base_ptr() as *mut _)
+            .collect();
         self.reset_source();
-        self.source = Source::Tlas { instances, blasses, blas_ptrs };
+        self.source = Source::Tlas {
+            instances,
+            blasses,
+            blas_ptrs,
+        };
         self.run_tlas_build();
     }
 
@@ -285,7 +313,12 @@ impl BvhDouble {
 
     fn run_tlas_build(&mut self) {
         let raw = self.raw.as_ptr();
-        if let Source::Tlas { instances, blas_ptrs, .. } = &mut self.source {
+        if let Source::Tlas {
+            instances,
+            blas_ptrs,
+            ..
+        } = &mut self.source
+        {
             unsafe {
                 ffi::tbvh_bvh_double_build_tlas(
                     raw,
@@ -303,7 +336,14 @@ impl BvhDouble {
         // the callbacks are cleared here so a custom build cannot run against freed state.
         // tinybvh's own builders leave the callbacks in place, the shim clears them on request.
         if matches!(self.source, Source::Custom(_)) {
-            unsafe { ffi::tbvh_bvh_double_set_custom_callbacks(self.raw.as_ptr(), None, None, core::ptr::null_mut()) };
+            unsafe {
+                ffi::tbvh_bvh_double_set_custom_callbacks(
+                    self.raw.as_ptr(),
+                    None,
+                    None,
+                    core::ptr::null_mut(),
+                )
+            };
         }
         self.source = Source::Empty;
     }
@@ -347,8 +387,17 @@ impl BvhDouble {
     /// was built over (or loaded with) triangle geometry.
     pub fn intersect_sphere(&self, center: DVec3, radius: f64) -> bool {
         self.assert_built();
-        assert!(self.has_vertex_data(), "tinybvh: intersect_sphere needs triangle geometry");
-        unsafe { ffi::tbvh_bvh_double_intersect_sphere(self.raw.as_ptr(), geometry::dvec3_to_ffi(center), radius) }
+        assert!(
+            self.has_vertex_data(),
+            "tinybvh: intersect_sphere needs triangle geometry"
+        );
+        unsafe {
+            ffi::tbvh_bvh_double_intersect_sphere(
+                self.raw.as_ptr(),
+                geometry::dvec3_to_ffi(center),
+                radius,
+            )
+        }
     }
 
     // --- maintenance -----------------------------------------------------------------------------
@@ -362,7 +411,8 @@ impl BvhDouble {
         if !self.is_built() {
             return Err(Error::NotBuilt);
         }
-        if !matches!(self.source, Source::Triangles(_) | Source::Loaded) || !self.has_vertex_data() {
+        if !matches!(self.source, Source::Triangles(_) | Source::Loaded) || !self.has_vertex_data()
+        {
             return Err(Error::NoGeometry);
         }
         if self.is_tlas() || !self.is_refittable() {
@@ -399,9 +449,14 @@ impl BvhDouble {
         self.assert_built();
         if self.may_have_holes() {
             self.compact();
-            assert!(!self.may_have_holes(), "tinybvh: the tree still has holes after compaction");
+            assert!(
+                !self.may_have_holes(),
+                "tinybvh: the tree still has holes after compaction"
+            );
         }
-        unsafe { ffi::tbvh_bvh_double_optimize(self.raw.as_ptr(), iterations, extreme, stochastic) };
+        unsafe {
+            ffi::tbvh_bvh_double_optimize(self.raw.as_ptr(), iterations, extreme, stochastic)
+        };
     }
 
     /// Splits leaves until none holds more than `max_prims` primitives.
@@ -550,7 +605,8 @@ impl BvhDouble {
     pub fn load_self_contained(path: impl AsRef<Path>) -> Result<BvhDouble> {
         let cpath = geometry::path_to_cstring(path.as_ref())?;
         let mut bvh = BvhDouble::new();
-        let ok = unsafe { ffi::tbvh_bvh_double_load_self_contained(bvh.raw.as_ptr(), cpath.as_ptr()) };
+        let ok =
+            unsafe { ffi::tbvh_bvh_double_load_self_contained(bvh.raw.as_ptr(), cpath.as_ptr()) };
         if !ok {
             return Err(Error::LoadFailed(path.as_ref().display().to_string()));
         }
@@ -598,11 +654,15 @@ impl BvhDouble {
             Source::Triangles(g) => Some(&g.vertices),
             Source::Loaded => {
                 let (mut count, mut stride) = (0u64, 0u64);
-                let ptr = unsafe { ffi::tbvh_bvh_double_verts(self.raw.as_ptr(), &mut count, &mut stride) };
+                let ptr = unsafe {
+                    ffi::tbvh_bvh_double_verts(self.raw.as_ptr(), &mut count, &mut stride)
+                };
                 if ptr.is_null() || count == 0 || stride != geometry::DVEC3_STRIDE {
                     None
                 } else {
-                    Some(unsafe { core::slice::from_raw_parts(ptr as *const DVec3, count as usize) })
+                    Some(unsafe {
+                        core::slice::from_raw_parts(ptr as *const DVec3, count as usize)
+                    })
                 }
             }
             _ => None,
@@ -627,7 +687,9 @@ impl BvhDouble {
                 if ptr.is_null() {
                     None
                 } else {
-                    Some(unsafe { core::slice::from_raw_parts(ptr, self.prim_count() as usize * 3) })
+                    Some(unsafe {
+                        core::slice::from_raw_parts(ptr, self.prim_count() as usize * 3)
+                    })
                 }
             }
             _ => None,
@@ -673,7 +735,8 @@ impl BvhDouble {
         self.reset_source();
         unsafe {
             ffi::tbvh_bvh_double_free(self.raw.as_ptr());
-            self.raw = NonNull::new(ffi::tbvh_bvh_double_new()).expect("tinybvh: allocation failed");
+            self.raw =
+                NonNull::new(ffi::tbvh_bvh_double_new()).expect("tinybvh: allocation failed");
         }
     }
 
@@ -682,7 +745,8 @@ impl BvhDouble {
         let source = core::mem::replace(&mut self.source, Source::Empty);
         unsafe {
             ffi::tbvh_bvh_double_free(self.raw.as_ptr());
-            self.raw = NonNull::new(ffi::tbvh_bvh_double_new()).expect("tinybvh: allocation failed");
+            self.raw =
+                NonNull::new(ffi::tbvh_bvh_double_new()).expect("tinybvh: allocation failed");
         }
         match source {
             Source::Triangles(g) => Some(g),
@@ -808,7 +872,11 @@ pub struct Bvh4Double {
     intermediates_discarded: bool,
 }
 
-impl_base_accessors_ex!(Bvh4Double, tbvh_bvh4_double_base, tbvh_bvh4_double_base_const);
+impl_base_accessors_ex!(
+    Bvh4Double,
+    tbvh_bvh4_double_base,
+    tbvh_bvh4_double_base_const
+);
 
 impl Bvh4Double {
     /// An empty structure with default [`BuildSettings`](crate::BuildSettings).
@@ -893,7 +961,10 @@ impl Bvh4Double {
 
     #[inline]
     fn assert_built(&self) {
-        assert!(self.is_built(), "tinybvh: the Bvh4Double has not been built");
+        assert!(
+            self.is_built(),
+            "tinybvh: the Bvh4Double has not been built"
+        );
     }
 
     /// Whether the intermediate binary tree is available, which refitting, optimization and the
@@ -1011,7 +1082,13 @@ impl Bvh4Double {
         geometry.validate();
         let cpath = geometry::path_to_cstring(path.as_ref())?;
         self.source = Source4::Empty;
-        let ok = unsafe { ffi::tbvh_bvh4_double_load(self.raw.as_ptr(), cpath.as_ptr(), geometry.triangle_count() as u64) };
+        let ok = unsafe {
+            ffi::tbvh_bvh4_double_load(
+                self.raw.as_ptr(),
+                cpath.as_ptr(),
+                geometry.triangle_count() as u64,
+            )
+        };
         if ok {
             self.source = Source4::Loaded(Some(geometry));
             Ok(())
@@ -1030,7 +1107,8 @@ impl Bvh4Double {
     pub fn load_self_contained(path: impl AsRef<Path>) -> Result<Bvh4Double> {
         let cpath = geometry::path_to_cstring(path.as_ref())?;
         let mut bvh = Bvh4Double::new();
-        let ok = unsafe { ffi::tbvh_bvh4_double_load_self_contained(bvh.raw.as_ptr(), cpath.as_ptr()) };
+        let ok =
+            unsafe { ffi::tbvh_bvh4_double_load_self_contained(bvh.raw.as_ptr(), cpath.as_ptr()) };
         if !ok {
             return Err(Error::LoadFailed(path.as_ref().display().to_string()));
         }
@@ -1096,7 +1174,8 @@ impl Bvh4Double {
         self.intermediates_discarded = false;
         unsafe {
             ffi::tbvh_bvh4_double_free(self.raw.as_ptr());
-            self.raw = NonNull::new(ffi::tbvh_bvh4_double_new()).expect("tinybvh: allocation failed");
+            self.raw =
+                NonNull::new(ffi::tbvh_bvh4_double_new()).expect("tinybvh: allocation failed");
         }
     }
 
@@ -1105,7 +1184,8 @@ impl Bvh4Double {
         let source = core::mem::replace(&mut self.source, Source4::Empty);
         unsafe {
             ffi::tbvh_bvh4_double_free(self.raw.as_ptr());
-            self.raw = NonNull::new(ffi::tbvh_bvh4_double_new()).expect("tinybvh: allocation failed");
+            self.raw =
+                NonNull::new(ffi::tbvh_bvh4_double_new()).expect("tinybvh: allocation failed");
         }
         match source {
             Source4::Triangles(g) | Source4::Loaded(Some(g)) => Some(g),

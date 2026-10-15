@@ -541,9 +541,18 @@ impl Bvh4Cpu {
     pub fn intersect_bundle(&self, rays: &mut [Ray]) -> u32 {
         self.assert_built();
         let n = crate::bundle_rays();
-        assert!(rays.len() == n, "tinybvh: a bundle holds exactly {n} rays, got {}", rays.len());
+        assert!(
+            rays.len() == n,
+            "tinybvh: a bundle holds exactly {n} rays, got {}",
+            rays.len()
+        );
         rays.iter().for_each(Ray::assert_finite);
-        let steps = unsafe { ffi::tbvh_bvh4_cpu_intersect_bundle(self.raw.as_ptr(), rays.as_mut_ptr() as *mut ffi::tbvh_ray) };
+        let steps = unsafe {
+            ffi::tbvh_bvh4_cpu_intersect_bundle(
+                self.raw.as_ptr(),
+                rays.as_mut_ptr() as *mut ffi::tbvh_ray,
+            )
+        };
         steps.max(0) as u32
     }
 
@@ -556,10 +565,17 @@ impl Bvh4Cpu {
     pub fn is_occluded_bundle(&self, rays: &mut [Ray], occluded: &mut [bool]) -> u32 {
         self.assert_built();
         let n = crate::bundle_rays();
-        assert!(rays.len() == n && occluded.len() == n, "tinybvh: a bundle holds exactly {n} rays");
+        assert!(
+            rays.len() == n && occluded.len() == n,
+            "tinybvh: a bundle holds exactly {n} rays"
+        );
         rays.iter().for_each(Ray::assert_finite);
         let steps = unsafe {
-            ffi::tbvh_bvh4_cpu_is_occluded_bundle(self.raw.as_ptr(), rays.as_mut_ptr() as *mut ffi::tbvh_ray, occluded.as_mut_ptr())
+            ffi::tbvh_bvh4_cpu_is_occluded_bundle(
+                self.raw.as_ptr(),
+                rays.as_mut_ptr() as *mut ffi::tbvh_ray,
+                occluded.as_mut_ptr(),
+            )
         };
         steps.max(0) as u32
     }

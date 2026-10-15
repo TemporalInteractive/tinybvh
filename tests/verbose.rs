@@ -17,7 +17,10 @@ fn two_triangles() -> Vec<Vec4> {
 }
 
 fn unthreaded() -> BuildSettings {
-    BuildSettings { enable_threading: false, ..Default::default() }
+    BuildSettings {
+        enable_threading: false,
+        ..Default::default()
+    }
 }
 
 /// Checks the structural invariants of a verbose tree: parent links agree with child links,
@@ -41,7 +44,10 @@ fn check_invariants(verbose: &BvhVerbose) -> u32 {
                     let child = nodes[c as usize];
                     assert_eq!(child.parent, idx, "parent link of node {c}");
                     assert_eq!(child.parent(), Some(idx));
-                    assert!(child.aabb_min.cmpge(node.aabb_min - 1e-5).all() && child.aabb_max.cmple(node.aabb_max + 1e-5).all());
+                    assert!(
+                        child.aabb_min.cmpge(node.aabb_min - 1e-5).all()
+                            && child.aabb_max.cmple(node.aabb_max + 1e-5).all()
+                    );
                 }
                 stack.push(l);
                 stack.push(r);
@@ -56,7 +62,10 @@ fn check_invariants(verbose: &BvhVerbose) -> u32 {
             }
         }
     }
-    assert!(seen.iter().all(|&s| s == 1), "every primitive is referenced exactly once");
+    assert!(
+        seen.iter().all(|&s| s == 1),
+        "every primitive is referenced exactly once"
+    );
     reachable
 }
 
@@ -100,7 +109,10 @@ fn optimize_lowers_or_keeps_the_sah() {
     let before = verbose.sah_cost(0);
     verbose.optimize(10);
     let after = verbose.sah_cost(0);
-    assert!(after <= before * 1.001, "optimize made the SAH cost worse: {before} -> {after}");
+    assert!(
+        after <= before * 1.001,
+        "optimize made the SAH cost worse: {before} -> {after}"
+    );
     check_invariants(&verbose);
     verbose.optimize_with(5, true, true);
     assert!(verbose.sah_cost(0) <= before * 1.001);
@@ -140,7 +152,11 @@ fn split_and_merge_leafs() {
             None => assert_eq!(node.tri_count, 1),
         }
     }
-    assert_eq!(verbose.node_count(), 2 * 2000 - 1, "a full binary tree over single-primitive leaves");
+    assert_eq!(
+        verbose.node_count(),
+        2 * 2000 - 1,
+        "a full binary tree over single-primitive leaves"
+    );
 
     verbose.merge_leafs();
     assert!(verbose.may_have_holes());
@@ -149,7 +165,10 @@ fn split_and_merge_leafs() {
     assert_eq!(reachable, verbose.node_count());
     verbose.compact();
     assert!(!verbose.may_have_holes());
-    assert!(verbose.used_nodes() <= reachable + 1, "compact leaves at most the conventional unused slot 1");
+    assert!(
+        verbose.used_nodes() <= reachable + 1,
+        "compact leaves at most the conventional unused slot 1"
+    );
     check_invariants(&verbose);
     // Optimizing after merging compacts on its own.
     verbose.merge_leafs();
@@ -158,7 +177,10 @@ fn split_and_merge_leafs() {
     check_invariants(&verbose);
 
     let bvh = verbose.into_bvh();
-    assert!(bvh.used_nodes() <= bvh.node_count() + 1, "compacted: only the conventional unused slot 1 remains");
+    assert!(
+        bvh.used_nodes() <= bvh.node_count() + 1,
+        "compacted: only the conventional unused slot 1 remains"
+    );
     check_against_brute_force(&verts, 200, 14, |ray| {
         bvh.intersect(ray);
     });
@@ -209,7 +231,11 @@ fn refit_is_refused_when_not_possible() {
     assert!(empty.nodes().is_empty() && empty.prim_indices().is_empty() && empty.bvh().is_none());
 
     let mut sbvh = Bvh::new();
-    sbvh.set_settings(&BuildSettings { binned_bvh: true, use_spatial_splits: true, ..Default::default() });
+    sbvh.set_settings(&BuildSettings {
+        binned_bvh: true,
+        use_spatial_splits: true,
+        ..Default::default()
+    });
     sbvh.build(random_triangles(500, 1));
     let mut verbose = BvhVerbose::from_bvh(sbvh);
     assert!(!verbose.is_refittable());
@@ -225,7 +251,10 @@ fn refit_is_refused_when_not_possible() {
     verbose.refit(true).unwrap();
 
     let mut custom = Bvh::new();
-    custom.build_custom(vec![Aabb::new(Vec3::ZERO, Vec3::ONE), Aabb::new(Vec3::splat(2.0), Vec3::splat(3.0))]);
+    custom.build_custom(vec![
+        Aabb::new(Vec3::ZERO, Vec3::ONE),
+        Aabb::new(Vec3::splat(2.0), Vec3::splat(3.0)),
+    ]);
     let mut verbose = BvhVerbose::from_bvh(custom);
     assert_eq!(verbose.refit(false), Err(Error::NoGeometry));
     assert!(verbose.vertices().is_none() && verbose.vertices_mut().is_none());
@@ -291,7 +320,11 @@ fn loaded_bvh_converts_but_keeps_no_primitive_bounds() {
     check_invariants(&verbose);
     verbose.optimize(3);
     verbose.refit(true).unwrap();
-    assert_eq!(verbose.split_leafs(1), Err(tinybvh::Error::NotRebuildable), "split_leafs is refused for a loaded tree");
+    assert_eq!(
+        verbose.split_leafs(1),
+        Err(tinybvh::Error::NotRebuildable),
+        "split_leafs is refused for a loaded tree"
+    );
     let bvh = verbose.into_bvh();
     check_against_brute_force(&verts, 100, 9, |ray| {
         bvh.intersect(ray);

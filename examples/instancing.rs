@@ -81,36 +81,63 @@ fn main() {
     for y in 0..4 {
         for x in 0..4 {
             let position = Vec3::new(x as f32 * 2.0 - 3.0, y as f32 * 2.0 - 3.0, 5.0);
-            instances.push(BlasInstance::with_transform(0, Mat4::from_translation(position)));
+            instances.push(BlasInstance::with_transform(
+                0,
+                Mat4::from_translation(position),
+            ));
         }
     }
-    instances.push(BlasInstance::with_transform(1, Mat4::from_translation(Vec3::new(1.0, 1.0, 2.0))).with_mask(0b10));
+    instances.push(
+        BlasInstance::with_transform(1, Mat4::from_translation(Vec3::new(1.0, 1.0, 2.0)))
+            .with_mask(0b10),
+    );
 
     let mut tlas = Bvh::new();
     tlas.build_tlas(instances, blasses);
 
     // Trace a few rays. The instance index tells which object was hit.
-    for (origin, label) in [(Vec3::new(1.0, 1.0, 0.0), "towards the sphere"), (Vec3::new(-3.0, -3.0, 0.0), "towards a cube")] {
+    for (origin, label) in [
+        (Vec3::new(1.0, 1.0, 0.0), "towards the sphere"),
+        (Vec3::new(-3.0, -3.0, 0.0), "towards a cube"),
+    ] {
         let mut ray = Ray::new(origin, Vec3::Z);
         tlas.intersect(&mut ray);
-        println!("{label}: instance {} (BLAS {}), prim {}, t = {:.3}", ray.hit.inst, tlas.instances()[ray.hit.inst as usize].blas_idx, ray.hit.prim, ray.hit.t);
+        println!(
+            "{label}: instance {} (BLAS {}), prim {}, t = {:.3}",
+            ray.hit.inst,
+            tlas.instances()[ray.hit.inst as usize].blas_idx,
+            ray.hit.prim,
+            ray.hit.t
+        );
     }
 
     // Masks: a ray that only matches mask bit 0 ignores the sphere and sees the cube behind it.
     let mut ray = Ray::new(Vec3::new(1.0, 1.0, 0.0), Vec3::Z).with_mask(0b01);
     tlas.intersect(&mut ray);
-    println!("masked ray: instance {}, t = {:.3}", ray.hit.inst, ray.hit.t);
+    println!(
+        "masked ray: instance {}, t = {:.3}",
+        ray.hit.inst, ray.hit.t
+    );
 
     // Animation: rotate the cubes and rebuild the TLAS each frame.
     for frame in 1..=3 {
         let angle = frame as f32 * 0.3;
         for inst in tlas.instances_mut().iter_mut().take(16) {
             let translation = inst.transform().w_axis.truncate();
-            inst.set_transform(Mat4::from_translation(translation) * Mat4::from_quat(Quat::from_rotation_z(angle)));
+            inst.set_transform(
+                Mat4::from_translation(translation) * Mat4::from_quat(Quat::from_rotation_z(angle)),
+            );
         }
         tlas.rebuild_tlas().unwrap();
         let mut ray = Ray::new(Vec3::new(-3.0, -2.4, 0.0), Vec3::Z);
         tlas.intersect(&mut ray);
-        println!("frame {frame}: {}", if ray.hit.is_hit() { format!("hit at t = {:.3}", ray.hit.t) } else { "miss".into() });
+        println!(
+            "frame {frame}: {}",
+            if ray.hit.is_hit() {
+                format!("hit at t = {:.3}", ray.hit.t)
+            } else {
+                "miss".into()
+            }
+        );
     }
 }

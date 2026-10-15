@@ -35,7 +35,10 @@ fn main() {
     let mut ray = Ray::new(Vec3::new(0.5, 0.5, -1.0), Vec3::new(0.1, 0.0, 2.0));
     let steps = bvh.intersect(&mut ray);
     if ray.hit.is_hit() {
-        println!("hit triangle {} at t = {:.4} ({steps} traversal steps)", ray.hit.prim, ray.hit.t);
+        println!(
+            "hit triangle {} at t = {:.4} ({steps} traversal steps)",
+            ray.hit.prim, ray.hit.t
+        );
     } else {
         println!("no hit ({steps} traversal steps)");
     }

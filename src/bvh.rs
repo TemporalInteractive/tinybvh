@@ -64,7 +64,8 @@ impl BvhNode {
     }
 }
 
-const _: () = assert!(core::mem::size_of::<BvhNode>() == core::mem::size_of::<ffi::tbvh_bvh_node>());
+const _: () =
+    assert!(core::mem::size_of::<BvhNode>() == core::mem::size_of::<ffi::tbvh_bvh_node>());
 
 /// What the structure was built over; keeps the referenced data alive.
 enum Source {
@@ -75,7 +76,11 @@ enum Source {
     /// Custom primitives.
     Custom(CustomHolder),
     /// A TLAS over instances of other structures.
-    Tlas { instances: Vec<BlasInstance>, blasses: Vec<Arc<dyn Blas>>, blas_ptrs: Vec<*mut ffi::tbvh_base> },
+    Tlas {
+        instances: Vec<BlasInstance>,
+        blasses: Vec<Arc<dyn Blas>>,
+        blas_ptrs: Vec<*mut ffi::tbvh_base>,
+    },
     /// Loaded from a self-contained file; tinybvh owns the geometry.
     Loaded,
 }
@@ -126,7 +131,11 @@ impl Bvh {
     pub fn new() -> Self {
         crate::install_fatal_trampoline();
         let raw = unsafe { ffi::tbvh_bvh_new() };
-        Bvh { raw: NonNull::new(raw).expect("tinybvh: allocation failed"), source: Source::Empty, opacity_map: None }
+        Bvh {
+            raw: NonNull::new(raw).expect("tinybvh: allocation failed"),
+            source: Source::Empty,
+            opacity_map: None,
+        }
     }
 
     // --- builders ------------------------------------------------------------------------------
@@ -143,7 +152,12 @@ impl Bvh {
         self.reset_source();
         unsafe {
             match geometry.index_args() {
-                None => ffi::tbvh_bvh_build(self.raw.as_ptr(), geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
+                None => ffi::tbvh_bvh_build(
+                    self.raw.as_ptr(),
+                    geometry.vert_ptr(),
+                    geometry.vert_count(),
+                    geometry::VEC4_STRIDE,
+                ),
                 Some((idx, prims)) => ffi::tbvh_bvh_build_indexed(
                     self.raw.as_ptr(),
                     geometry.vert_ptr(),
@@ -165,7 +179,12 @@ impl Bvh {
         self.reset_source();
         unsafe {
             match geometry.index_args() {
-                None => ffi::tbvh_bvh_build_hq(self.raw.as_ptr(), geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
+                None => ffi::tbvh_bvh_build_hq(
+                    self.raw.as_ptr(),
+                    geometry.vert_ptr(),
+                    geometry.vert_count(),
+                    geometry::VEC4_STRIDE,
+                ),
                 Some((idx, prims)) => ffi::tbvh_bvh_build_hq_indexed(
                     self.raw.as_ptr(),
                     geometry.vert_ptr(),
@@ -185,9 +204,19 @@ impl Bvh {
     pub fn build_quick(&mut self, geometry: impl Into<Geometry>) {
         let geometry = geometry.into();
         geometry.validate();
-        assert!(geometry.indices.is_none(), "tinybvh: build_quick does not support indexed geometry");
+        assert!(
+            geometry.indices.is_none(),
+            "tinybvh: build_quick does not support indexed geometry"
+        );
         self.reset_source();
-        unsafe { ffi::tbvh_bvh_build_quick(self.raw.as_ptr(), geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE) };
+        unsafe {
+            ffi::tbvh_bvh_build_quick(
+                self.raw.as_ptr(),
+                geometry.vert_ptr(),
+                geometry.vert_count(),
+                geometry::VEC4_STRIDE,
+            )
+        };
         self.source = Source::Triangles(geometry);
     }
 
@@ -203,7 +232,12 @@ impl Bvh {
         self.reset_source();
         unsafe {
             match geometry.index_args() {
-                None => ffi::tbvh_bvh_build_simd(self.raw.as_ptr(), geometry.vert_ptr(), geometry.vert_count(), geometry::VEC4_STRIDE),
+                None => ffi::tbvh_bvh_build_simd(
+                    self.raw.as_ptr(),
+                    geometry.vert_ptr(),
+                    geometry.vert_count(),
+                    geometry::VEC4_STRIDE,
+                ),
                 Some((idx, prims)) => ffi::tbvh_bvh_build_simd_indexed(
                     self.raw.as_ptr(),
                     geometry.vert_ptr(),
@@ -238,7 +272,12 @@ impl Bvh {
                 CustomHolder::occluded_fn(),
                 holder.user_ptr(),
             );
-            ffi::tbvh_bvh_build_custom(self.raw.as_ptr(), CustomHolder::aabb_fn(), prim_count, holder.user_ptr());
+            ffi::tbvh_bvh_build_custom(
+                self.raw.as_ptr(),
+                CustomHolder::aabb_fn(),
+                prim_count,
+                holder.user_ptr(),
+            );
         }
         self.source = Source::Custom(holder);
         geometry::rethrow_pending_panic();
@@ -252,8 +291,14 @@ impl Bvh {
     /// Panics if there are no instances, an instance refers to a BLAS index out of range, or a
     /// BLAS has not been built.
     pub fn build_tlas(&mut self, instances: Vec<BlasInstance>, blasses: Vec<Arc<dyn Blas>>) {
-        assert!(!instances.is_empty(), "tinybvh: a TLAS needs at least one instance");
-        assert!(!blasses.is_empty(), "tinybvh: a TLAS needs at least one BLAS");
+        assert!(
+            !instances.is_empty(),
+            "tinybvh: a TLAS needs at least one instance"
+        );
+        assert!(
+            !blasses.is_empty(),
+            "tinybvh: a TLAS needs at least one BLAS"
+        );
         for (i, inst) in instances.iter().enumerate() {
             assert!(
                 (inst.blas_idx as usize) < blasses.len(),
@@ -265,9 +310,16 @@ impl Bvh {
         for (i, blas) in blasses.iter().enumerate() {
             assert!(blas.blas_is_ready(), "tinybvh: BLAS {i} has not been built");
         }
-        let blas_ptrs: Vec<*mut ffi::tbvh_base> = blasses.iter().map(|b| b.blas_base_ptr() as *mut _).collect();
+        let blas_ptrs: Vec<*mut ffi::tbvh_base> = blasses
+            .iter()
+            .map(|b| b.blas_base_ptr() as *mut _)
+            .collect();
         self.reset_source();
-        self.source = Source::Tlas { instances, blasses, blas_ptrs };
+        self.source = Source::Tlas {
+            instances,
+            blasses,
+            blas_ptrs,
+        };
         self.run_tlas_build();
     }
 
@@ -286,7 +338,12 @@ impl Bvh {
 
     fn run_tlas_build(&mut self) {
         let raw = self.raw.as_ptr();
-        if let Source::Tlas { instances, blas_ptrs, .. } = &mut self.source {
+        if let Source::Tlas {
+            instances,
+            blas_ptrs,
+            ..
+        } = &mut self.source
+        {
             unsafe {
                 ffi::tbvh_bvh_build_tlas(
                     raw,
@@ -303,7 +360,14 @@ impl Bvh {
         // Drop the old data only after tinybvh stops referencing it, i.e. after the new build;
         // the callbacks are cleared here so a custom build cannot run against freed state.
         if matches!(self.source, Source::Custom(_)) {
-            unsafe { ffi::tbvh_bvh_set_custom_callbacks(self.raw.as_ptr(), None, None, core::ptr::null_mut()) };
+            unsafe {
+                ffi::tbvh_bvh_set_custom_callbacks(
+                    self.raw.as_ptr(),
+                    None,
+                    None,
+                    core::ptr::null_mut(),
+                )
+            };
         }
         self.source = Source::Empty;
     }
@@ -346,8 +410,13 @@ impl Bvh {
     /// triangle geometry (custom primitives, TLAS).
     pub fn intersect_sphere(&self, center: Vec3, radius: f32) -> bool {
         self.assert_built();
-        assert!(self.has_vertex_data(), "tinybvh: intersect_sphere needs triangle geometry");
-        unsafe { ffi::tbvh_bvh_intersect_sphere(self.raw.as_ptr(), geometry::vec3_to_ffi(center), radius) }
+        assert!(
+            self.has_vertex_data(),
+            "tinybvh: intersect_sphere needs triangle geometry"
+        );
+        unsafe {
+            ffi::tbvh_bvh_intersect_sphere(self.raw.as_ptr(), geometry::vec3_to_ffi(center), radius)
+        }
     }
 
     /// Traces a bundle of coherent rays at once (WiVeC traversal). Only available on a TLAS;
@@ -358,9 +427,18 @@ impl Bvh {
             return Err(Error::NotTlas);
         }
         let n = crate::bundle_rays();
-        assert!(rays.len() == n, "tinybvh: a bundle holds exactly {n} rays, got {}", rays.len());
+        assert!(
+            rays.len() == n,
+            "tinybvh: a bundle holds exactly {n} rays, got {}",
+            rays.len()
+        );
         rays.iter().for_each(Ray::assert_finite);
-        let steps = unsafe { ffi::tbvh_bvh_intersect_bundle(self.raw.as_ptr(), rays.as_mut_ptr() as *mut ffi::tbvh_ray) };
+        let steps = unsafe {
+            ffi::tbvh_bvh_intersect_bundle(
+                self.raw.as_ptr(),
+                rays.as_mut_ptr() as *mut ffi::tbvh_ray,
+            )
+        };
         geometry::rethrow_pending_panic();
         Ok(steps.max(0) as u32)
     }
@@ -374,10 +452,17 @@ impl Bvh {
             return Err(Error::NotTlas);
         }
         let n = crate::bundle_rays();
-        assert!(rays.len() == n && occluded.len() == n, "tinybvh: a bundle holds exactly {n} rays");
+        assert!(
+            rays.len() == n && occluded.len() == n,
+            "tinybvh: a bundle holds exactly {n} rays"
+        );
         rays.iter().for_each(Ray::assert_finite);
         let steps = unsafe {
-            ffi::tbvh_bvh_is_occluded_bundle(self.raw.as_ptr(), rays.as_mut_ptr() as *mut ffi::tbvh_ray, occluded.as_mut_ptr())
+            ffi::tbvh_bvh_is_occluded_bundle(
+                self.raw.as_ptr(),
+                rays.as_mut_ptr() as *mut ffi::tbvh_ray,
+                occluded.as_mut_ptr(),
+            )
         };
         geometry::rethrow_pending_panic();
         Ok(steps.max(0) as u32)
@@ -394,7 +479,8 @@ impl Bvh {
         if !self.is_built() {
             return Err(Error::NotBuilt);
         }
-        if !matches!(self.source, Source::Triangles(_) | Source::Loaded) || !self.has_vertex_data() {
+        if !matches!(self.source, Source::Triangles(_) | Source::Loaded) || !self.has_vertex_data()
+        {
             return Err(Error::NoGeometry);
         }
         if self.is_tlas() || !self.is_refittable() {
@@ -429,7 +515,10 @@ impl Bvh {
         self.assert_built();
         if self.may_have_holes() {
             self.compact();
-            assert!(!self.may_have_holes(), "tinybvh: the tree still has holes after compaction");
+            assert!(
+                !self.may_have_holes(),
+                "tinybvh: the tree still has holes after compaction"
+            );
         }
         unsafe { ffi::tbvh_bvh_optimize(self.raw.as_ptr(), iterations, extreme, stochastic) };
     }
@@ -516,7 +605,8 @@ impl Bvh {
         assert!(root < self.used_nodes(), "tinybvh: node index out of range");
         let cap = self.used_nodes();
         let mut list = vec![0u32; cap as usize];
-        let n = unsafe { ffi::tbvh_bvh_collect_nodes(self.raw.as_ptr(), root, list.as_mut_ptr(), cap) };
+        let n =
+            unsafe { ffi::tbvh_bvh_collect_nodes(self.raw.as_ptr(), root, list.as_mut_ptr(), cap) };
         list.truncate(n as usize);
         list
     }
@@ -640,7 +730,8 @@ impl Bvh {
             Source::Triangles(g) => Some(&g.vertices),
             Source::Loaded => {
                 let (mut count, mut stride) = (0u32, 0u32);
-                let ptr = unsafe { ffi::tbvh_bvh_verts(self.raw.as_ptr(), &mut count, &mut stride) };
+                let ptr =
+                    unsafe { ffi::tbvh_bvh_verts(self.raw.as_ptr(), &mut count, &mut stride) };
                 if ptr.is_null() || count == 0 || stride != geometry::VEC4_STRIDE {
                     None
                 } else {
@@ -669,7 +760,9 @@ impl Bvh {
                 if ptr.is_null() {
                     None
                 } else {
-                    Some(unsafe { core::slice::from_raw_parts(ptr, self.prim_count() as usize * 3) })
+                    Some(unsafe {
+                        core::slice::from_raw_parts(ptr, self.prim_count() as usize * 3)
+                    })
                 }
             }
             _ => None,
